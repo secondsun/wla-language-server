@@ -29,6 +29,13 @@
 				]
 			}
 		],
+		"grammars": [
+			{
+				"language": "wla",
+				"scopeName": "source.wla",
+				"path": "./syntaxes/wla.tmGrammar.json"
+			}
+		],
 		"configuration": {
 			"title": "WLA configuration",
 			"properties": {
@@ -54,6 +61,7 @@
 		"test": "sh ./scripts/e2e.sh"
 	},
 	"dependencies": {
+		"npm": "^6.5.0",
 		"vscode-languageclient": "^5.2.1"
 	},
 	"devDependencies": {

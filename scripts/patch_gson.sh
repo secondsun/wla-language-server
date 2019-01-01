@@ -6,7 +6,7 @@
 set -e
 
 # Needed if you have a java version other than 11 as default
-JAVA_HOME=/etc/alternatives/java_sdk
+JAVA_HOME=/usr/lib/jvm/java
 
 # Download Gson jar
 cd modules
