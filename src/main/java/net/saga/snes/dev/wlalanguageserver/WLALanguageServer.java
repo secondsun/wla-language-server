@@ -13,6 +13,7 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
+import org.javacs.lsp.DidChangeConfigurationParams;
 import org.javacs.lsp.DocumentSymbolParams;
 import org.javacs.lsp.InitializeParams;
 import org.javacs.lsp.InitializeResult;
@@ -40,6 +41,7 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public void initialized() {
     this.parser = createParser();
+    parser.parse(this.workspaceRoot.toString().replace("file://", ""), "main.s");
   }
 
   private MultiFileParser createParser() {
@@ -62,15 +64,22 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   @Override
+  public void didChangeConfiguration(DidChangeConfigurationParams params) {
+    LOG.info(String.valueOf(params.settings));
+  }
+
+  @Override
   public List<SymbolInformation> documentSymbol(DocumentSymbolParams params) {
     var uri = params.textDocument.uri.toString().replace("file://", "");
-    parser.parse(this.workspaceRoot.toString().replace("file://", ""), "main.s");
-    LOG.info(String.valueOf(uri));
-    LOG.info(parser.getParsedFiles().stream().collect(Collectors.joining("\n")));
+
     var result =
         parser
             .getNodes(String.valueOf(uri))
-            .stream()
+            .parallelStream()
+            .filter(
+                node ->
+                    !(null == node.getSourceToken().getString()
+                        || node.getSourceToken().getString().isEmpty()))
             .map(
                 (node) -> {
                   SymbolInformation si = new SymbolInformation();
@@ -87,7 +96,10 @@ public class WLALanguageServer extends LanguageServer {
                       si.kind = 6;
                       break;
                     case SECTION:
-                      si.name = ((SectionNode) node).getName();
+                      if (!(null == node.getSourceToken().getString()
+                          || node.getSourceToken().getString().isEmpty())) {
+                        si.name = ((SectionNode) node).getName();
+                      }
                       break;
                     case LABEL:
                       si.kind = 13;
@@ -103,7 +115,10 @@ public class WLALanguageServer extends LanguageServer {
                       si.kind = 16;
                       break;
                     case MACRO:
-                      si.name = ((MacroNode) node).getName();
+                      if (!(null == node.getSourceToken().getString()
+                          || node.getSourceToken().getString().isEmpty())) {
+                        si.name = ((MacroNode) node).getName();
+                      }
                       si.kind = 6;
                       break;
                     case STRING_EXPRESSION:
