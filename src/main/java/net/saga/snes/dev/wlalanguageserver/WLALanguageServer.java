@@ -7,13 +7,18 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeZ80;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
 import org.javacs.lsp.DidChangeConfigurationParams;
+import org.javacs.lsp.DocumentLink;
+import org.javacs.lsp.DocumentLinkParams;
 import org.javacs.lsp.DocumentSymbolParams;
 import org.javacs.lsp.InitializeParams;
 import org.javacs.lsp.InitializeResult;
@@ -58,7 +63,11 @@ public class WLALanguageServer extends LanguageServer {
     LOG.info(String.valueOf(workspaceRoot));
     LOG.info(String.valueOf(params));
     var c = new JsonObject();
+
+    var documentLinkOptions = new JsonObject();
+    documentLinkOptions.addProperty("resolveProvider", false);
     c.addProperty("documentSymbolProvider", true);
+    c.add("documentLinkProvider", documentLinkOptions);
 
     return new InitializeResult(c);
   }
@@ -66,6 +75,45 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
     LOG.info(String.valueOf(params.settings));
+  }
+
+  @Override
+  public List<DocumentLink> documentLink(DocumentLinkParams params) {
+    var uri = params.textDocument.uri.toString().replace("file://", "");
+    return parser
+        .getNodes(String.valueOf(uri))
+        .parallelStream()
+        .filter(
+            node ->
+                node.getType() == NodeTypes.DIRECTIVE
+                    && ((DirectiveNode) node).getDirectiveType().equals(AllDirectives.INCLUDE))
+        .map(
+            node -> {
+              var link = new DocumentLink();
+              var arguments = ((DirectiveNode) node).getArguments();
+              var argsToken = arguments.getChildren().get(0).getSourceToken();
+              var range = toRange(argsToken);
+              LOG.info(
+                  "document Link file://"
+                      + this.workspaceRoot.toString()
+                      + "/"
+                      + arguments.getString(0).replace("\"", ""));
+              LOG.info(
+                  String.format(
+                      " Document Link Range {%d:%d,%d:%d}",
+                      range.start.line,
+                      range.start.character,
+                      range.end.line,
+                      range.end.character));
+              link.range = range;
+              link.target =
+                  "file://"
+                      + this.workspaceRoot.toString()
+                      + "/"
+                      + arguments.getString(0).replace("\"", "");
+              return link;
+            })
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -153,8 +201,8 @@ public class WLALanguageServer extends LanguageServer {
 
   private Range toRange(Token sourceToken) {
     var position = sourceToken.getPosition();
-    var start = new Position(position.beginLine, position.beginOffset);
-    var end = new Position(position.endLine, position.endOffset);
+    var start = new Position(position.beginLine - 1, position.beginOffset);
+    var end = new Position(position.endLine - 1, position.endOffset);
     Range r = new Range(start, end);
     return r;
   }

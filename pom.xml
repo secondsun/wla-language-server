@@ -16,7 +16,7 @@
     </dependency>
     <dependency>
       <groupId>org.javacs</groupId>
-      <artifactId>javac-services-api</artifactId>
+      <artifactId>javac-services</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
