@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -54,7 +55,8 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   @Override
-  public void shutdown() {}
+  public void shutdown() {
+  }
 
   @Override
   public InitializeResult initialize(InitializeParams params) {
@@ -80,8 +82,11 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public List<DocumentLink> documentLink(DocumentLinkParams params) {
     var uri = params.textDocument.uri.toString().replace("file://", "");
-    return parser
-        .getNodes(String.valueOf(uri))
+    var nodes = parser.getNodes(String.valueOf(uri));
+    if (nodes == null) {
+      return new ArrayList<>();
+    }
+    return nodes
         .parallelStream()
         .filter(
             node ->
