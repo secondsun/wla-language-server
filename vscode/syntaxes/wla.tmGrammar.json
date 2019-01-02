@@ -3,15 +3,28 @@
 	"name": "wla",
 	"scopeName": "source.wla",
 	"patterns": [
+		
 		{
 			"include": "#comment"
+		},{
+			"include": "#string"
 		},
 		{
 			"include": "#directive"
 		},
 		{
-			"include": "#string"
+			"include": "#ilabel"
+		},
+		{
+			"include": "#opcode"
+		},
+		{
+			"include": "#registers"
+		},
+		{
+			"include": "#arguments"
 		}
+		
 	],
 	"repository": {
 		"comment": {
@@ -43,409 +56,41 @@
 		"oneLineDirectiveName": {
 			"patterns": [
 				{
-					"begin": "(?i:\\.8BIT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.16BIT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.24BIT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ACCU)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.INDEX)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DBRND)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DWRND)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DBCOS)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DBSIN)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DWCOS)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DWSIN)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMBANKS)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.EMPTYFILL)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.COMPUTESNESCHECKSUM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.INCDIR)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.INCLUDE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.INCBIN)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.INPUT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BACKGROUND)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.UNBACKGROUND)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FAIL)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FCLOSE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FOPEN)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FREAD)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FSIZE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SHIFT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.FASTROM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SLOWROM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SMC)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.HIROM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.EXHIROM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.LOROM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BASE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BANK)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SLOT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMBANKSIZE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BANKSIZE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ORG)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ORGA)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DS)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DSB)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DSTRUCT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DSW)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DB)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BYTE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BYT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DBM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SYM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SYMBOL)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BR)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.BREAKPOINT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ASCTABLE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ASC)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DW)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.WORD)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DWM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DEFINE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DEF)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.EQU)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.REDEFINE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.REDEF)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.SEED)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.EXPORT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.PRINTT)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.PRINTV)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.OUTNAME)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.COMPUTEGBCHECKSUM)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.CARTRIDGETYPE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.COUNTRYCODE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.VERSION)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.DESTINATIONCODE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.NINTENDOLOGO)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.COMPUTEGBCOMPLEMENTCHECK)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.LICENSEECODENEW)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.LICENSEECODEOLD)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.NAME)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.RAMSIZE)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMDMG)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMGBC)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMGBCONLY)",
-					"end": "\\s",
-					"name": "keyword.control"
-				},
-				{
-					"begin": "(?i:\\.ROMSGB)",
-					"end": "\\s",
-					"name": "keyword.control"
+					"match": "^\\s*\\.[a-zA-Z0-9]+",
+					"name": "keyword.control"
+				}
+			]
+		},
+		"registers": {
+			"patterns": [
+				{
+					"name": "entity.name.function.register",
+					"match": "(?i)\\b(af|bc|de|hl|ix|iy|i|r|AF'|BC'|DE'|HL'|psw|pc|ac|x|y|sr|sp|a|b|c|d|e|f|h|l)\\b"
+				}
+			]
+		},
+		"arguments": {
+			"patterns": [
+				{
+					"match": "\\b[a-zA-Z0-9\\.\\:_]+\\b",
+					"name": "constant.numeric.arguments"
+				}
+			]
+		},
+		
+		"opcode": {
+			"patterns": [
+				{
+					"match": "^\\s*[a-zA-Z0-9\\.]{0,4}\\b",
+					"name": "constant.character.opcode"
+				}
+			]
+		},
+		"ilabel": {
+			"patterns": [
+				{
+					"match": "^\\s*[a-zA-Z0-9\\.\\:_]{5,600}\\b",
+					"name": "entity.name.class.ilabel"
 				}
 			]
 		},
