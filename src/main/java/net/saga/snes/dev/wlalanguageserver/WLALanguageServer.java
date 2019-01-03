@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeZ80;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
@@ -17,7 +18,10 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
+import org.javacs.lsp.Diagnostic;
 import org.javacs.lsp.DidChangeConfigurationParams;
+import org.javacs.lsp.DidChangeWatchedFilesParams;
+import org.javacs.lsp.DidSaveTextDocumentParams;
 import org.javacs.lsp.DocumentLink;
 import org.javacs.lsp.DocumentLinkParams;
 import org.javacs.lsp.DocumentSymbolParams;
@@ -27,6 +31,7 @@ import org.javacs.lsp.LanguageClient;
 import org.javacs.lsp.LanguageServer;
 import org.javacs.lsp.Location;
 import org.javacs.lsp.Position;
+import org.javacs.lsp.PublishDiagnosticsParams;
 import org.javacs.lsp.Range;
 import org.javacs.lsp.SymbolInformation;
 
@@ -118,6 +123,70 @@ public class WLALanguageServer extends LanguageServer {
               return link;
             })
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public void didSaveTextDocument(DidSaveTextDocumentParams params) {
+    var uri =
+        params
+            .textDocument
+            .uri
+            .toString()
+            .replace("file://", "")
+            .replace(this.workspaceRoot.toString() + "/", "");
+    var root = this.workspaceRoot.toString().replace("file://", "");
+
+    parser.reparseFile(root, uri);
+    publicDiagnostics(uri);
+  }
+
+  @Override
+  public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
+
+    params
+        .changes
+        .parallelStream()
+        .forEach(
+            change -> {
+              switch (change.type) {
+                case 1:
+                case 2:
+                  var fileName =
+                      change
+                          .uri
+                          .toString()
+                          .replace("file://", "")
+                          .replace(this.workspaceRoot.toString(), "")
+                          .replaceFirst("/", "");
+                  var root = this.workspaceRoot.toString().replace("file://", "");
+
+                  parser.reparseFile(root, fileName);
+                  publicDiagnostics(fileName);
+              }
+            });
+  }
+
+  private void publicDiagnostics(String fileName) {
+    List<ErrorNode> errors = parser.getErrors(workspaceRoot.toString() + "/" + fileName);
+
+    List<Diagnostic> diagnostics = new ArrayList<>();
+
+    errors
+        .stream()
+        .map(
+            error -> {
+              var d = new Diagnostic();
+              d.source = error.getSourceToken().getString();
+              d.range = toRange(error.getSourceToken());
+              d.message = error.getException().getMessage();
+              return d;
+            })
+        .forEach(diagnostics::add);
+
+    var file = URI.create("file://" + workspaceRoot.toString() + "/" + fileName);
+    LOG.info(String.format("{diagnosticsFile: %s}", file));
+
+    client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
 
   @Override
