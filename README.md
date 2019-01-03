@@ -30,3 +30,7 @@ run `vsce package -o build.vsix;code --install-extension build.vsix`
 Clone https://github.com/Drenn1/ages-disasm  
 Open VSCode in ages-dsiasm and open the main.s file  
 The server Should activate.  Check the Output -> WLA window.  
+
+# Demo
+
+[![VS CODE DEMO](https://img.youtube.com/vi/LOv05pIG0Fc/0.jpg)](https://www.youtube.com/watch?v=LOv05pIG0Fc)
