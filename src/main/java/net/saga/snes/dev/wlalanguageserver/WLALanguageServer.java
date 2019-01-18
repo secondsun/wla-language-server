@@ -12,6 +12,7 @@ import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirecti
 import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeZ80;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
@@ -192,84 +193,102 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public List<SymbolInformation> documentSymbol(DocumentSymbolParams params) {
     var uri = params.textDocument.uri.toString().replace("file://", "");
-
+    var unpackedNodes = new ArrayList<Node>();
     var nodes = parser.getNodes(String.valueOf(uri));
     if (nodes == null) {
       return new ArrayList<>();
     }
-    return nodes
-        .parallelStream()
-        .filter(
-            node ->
-                !(null == node.getSourceToken().getString()
-                    || node.getSourceToken().getString().isEmpty()))
-        .map(
-            (node) -> {
-              SymbolInformation si = new SymbolInformation();
-              si.location =
-                  new Location(URI.create("file://" + uri), toRange(node.getSourceToken()));
-              si.name = node.getSourceToken().getString();
-              si.kind = 11;
-              switch (node.getType()) {
-                case DIRECTIVE_ARGUMENTS:
-                  break;
-                case DIRECTIVE_BODY:
-                  break;
-                case DIRECTIVE:
-                  si.kind = 6;
-                  break;
-                case SECTION:
-                  if (!(null == node.getSourceToken().getString()
-                      || node.getSourceToken().getString().isEmpty())) {
-                    si.name = ((SectionNode) node).getName();
-                  }
-                  break;
-                case LABEL:
-                  si.kind = 13;
-                  break;
-                case OPCODE:
-                  si.kind = 14;
-                  break;
-                case OPCODE_ARGUMENT:
-                  break;
-                case NUMERIC_EXPRESION:
-                  break;
-                case NUMERIC_CONSTANT:
-                  si.kind = 16;
-                  break;
-                case MACRO:
-                  if (!(null == node.getSourceToken().getString()
-                      || node.getSourceToken().getString().isEmpty())) {
-                    si.name = ((MacroNode) node).getName();
-                  }
-                  si.kind = 6;
-                  break;
-                case STRING_EXPRESSION:
-                  si.kind = 15;
-                  break;
-                case IDENTIFIER_EXPRESSION:
-                  si.kind = 13;
-                  break;
-                case LABEL_DEFINITION:
-                  break;
-                case MACRO_CALL:
-                  si.kind = 12;
-                  break;
-                case SLOT:
-                  break;
-                case MACRO_BODY:
-                  break;
-                case ENUM:
-                  si.name = ((EnumNode) node).getAddress();
-                  si.kind = 10;
-                  break;
-                default:
+
+    nodes.forEach(
+        node -> {
+          for (var n : nodes) {
+            unpackedNodes.add(n);
+          }
+        });
+
+    return new ArrayList<>(
+        unpackedNodes
+            .parallelStream()
+            .filter(
+                node ->
+                    !(null == node.getSourceToken().getString()
+                        || node.getSourceToken().getString().isEmpty()))
+            .map(
+                (node) -> {
+                  SymbolInformation si = new SymbolInformation();
+                  si.location =
+                      new Location(URI.create("file://" + uri), toRange(node.getSourceToken()));
                   si.name = node.getSourceToken().getString();
-                  break;
-              }
-              return si;
-            })
-        .collect(Collectors.toList());
+                  si.kind = 11;
+                  switch (node.getType()) {
+                    case DIRECTIVE_ARGUMENTS:
+                      break;
+                    case DIRECTIVE_BODY:
+                      break;
+                    case DIRECTIVE:
+                      si.kind = 6;
+                      switch (((DirectiveNode) node).getDirectiveType()) {
+                        case STRUCT:
+                        case DSTRUCT:
+                        case DEFINE:
+                          si.name = ((DirectiveNode) node).getArguments().getString(0);
+                          break;
+                        default:
+                          break;
+                      }
+                      break;
+                    case SECTION:
+                      if (!(null == node.getSourceToken().getString()
+                          || node.getSourceToken().getString().isEmpty())) {
+                        si.name = ((SectionNode) node).getName();
+                      }
+                      break;
+                    case LABEL:
+                      si.kind = 13;
+                      break;
+                    case OPCODE:
+                      si.kind = 14;
+                      break;
+                    case OPCODE_ARGUMENT:
+                      break;
+                    case NUMERIC_EXPRESION:
+                      break;
+                    case NUMERIC_CONSTANT:
+                      si.kind = 16;
+                      break;
+                    case MACRO:
+                      if (!(null == node.getSourceToken().getString()
+                          || node.getSourceToken().getString().isEmpty())) {
+                        si.name = ((MacroNode) node).getStartToken().getString();
+                      }
+                      si.kind = 6;
+                      break;
+                    case STRING_EXPRESSION:
+                      si.kind = 15;
+                      break;
+                    case IDENTIFIER_EXPRESSION:
+                      si.kind = 13;
+                      break;
+                    case LABEL_DEFINITION:
+                      break;
+                    case MACRO_CALL:
+                      si.kind = 12;
+                      break;
+                    case SLOT:
+                      break;
+                    case MACRO_BODY:
+                      break;
+                    case ENUM:
+                      si.name = ((EnumNode) node).getAddress();
+                      si.kind = 10;
+                      break;
+                    default:
+                      si.name = node.getSourceToken().getString();
+                      break;
+                  }
+                  return si;
+                })
+            .collect(Collectors.toSet()));
   }
 
   private Range toRange(Token sourceToken) {

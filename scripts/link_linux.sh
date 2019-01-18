@@ -7,7 +7,7 @@ set -e
 JAVA_HOME=/usr/lib/jvm/java
 
 # Compile sources
-mvn compile
+#mvn compile
 
 # Patch gson
 if [ ! -e modules/gson.jar ]; then
@@ -15,7 +15,7 @@ if [ ! -e modules/gson.jar ]; then
 fi
 
 # Build using jlink
-rm -rf dist/mac
+rm -rf dist/linux
 $JAVA_HOME/bin/jlink \
   --module-path modules/gson.jar:target/classes:target/dependency \
   --add-modules gson,javacs,wla_server \
