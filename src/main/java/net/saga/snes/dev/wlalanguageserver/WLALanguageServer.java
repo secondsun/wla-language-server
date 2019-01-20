@@ -5,11 +5,17 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
-import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeZ80;
+import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeGB;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -19,6 +25,7 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
+import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
 import org.javacs.lsp.Diagnostic;
 import org.javacs.lsp.DidChangeConfigurationParams;
 import org.javacs.lsp.DidChangeWatchedFilesParams;
@@ -57,7 +64,7 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   private MultiFileParser createParser() {
-    return new MultiFileParser(OpCodeZ80.opcodes());
+    return new MultiFileParser(OpCodeGB.opcodes());
   }
 
   @Override
@@ -192,23 +199,56 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public List<SymbolInformation> documentSymbol(DocumentSymbolParams params) {
+
+    // We want to to filter out node types that don't provide symbols that are worth navigating to
+    // IE opcodes, ifs etc
+    final Set<NodeTypes> allowedSymbolNodeTypes = new HashSet<>();
+    Collections.addAll(
+        allowedSymbolNodeTypes,
+        NodeTypes.DIRECTIVE,
+        NodeTypes.ENUM,
+        NodeTypes.SECTION,
+        NodeTypes.LABEL_DEFINITION,
+        NodeTypes.MACRO,
+        NodeTypes.SLOT);
+
+    final Set<AllDirectives> allowedDirectiveTypes = new HashSet<>();
+    Collections.addAll(
+        allowedDirectiveTypes, AllDirectives.STRUCT, AllDirectives.DEFINE, AllDirectives.MACRO);
+
     var uri = params.textDocument.uri.toString().replace("file://", "");
-    var unpackedNodes = new ArrayList<Node>();
+
     var nodes = parser.getNodes(String.valueOf(uri));
     if (nodes == null) {
       return new ArrayList<>();
     }
 
-    nodes.forEach(
-        node -> {
-          for (var n : nodes) {
-            unpackedNodes.add(n);
-          }
-        });
+    var parentNode =
+        new Node(
+            NodeTypes.ERROR, new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0)));
+    nodes.forEach(parentNode::addChild);
+    Iterator<Node> sourceIterator = parentNode.iterator();
+
+    Iterable<Node> iterable = () -> sourceIterator;
+    Stream<Node> targetStream = StreamSupport.stream(iterable.spliterator(), true);
 
     return new ArrayList<>(
-        unpackedNodes
-            .parallelStream()
+        targetStream
+            .filter(node -> allowedSymbolNodeTypes.contains(node.getType()))
+            .filter(
+                node -> {
+                  if (node.getType().equals(NodeTypes.DIRECTIVE)) {
+                    return allowedDirectiveTypes.contains(
+                        ((DirectiveNode) node).getDirectiveType());
+                  } else {
+                    if (node.getSourceToken().getString().equals("ldh")) {
+                      LOG.info("Found a wrong typed symbol, should be opcode");
+                      LOG.info(node.toString());
+                      LOG.info(node.getSourceToken().toString());
+                    }
+                    return true;
+                  }
+                })
             .filter(
                 node ->
                     !(null == node.getSourceToken().getString()
@@ -232,6 +272,13 @@ public class WLALanguageServer extends LanguageServer {
                         case DSTRUCT:
                         case DEFINE:
                           si.name = ((DirectiveNode) node).getArguments().getString(0);
+                          break;
+                        case MACRO:
+                          if (!(null == node.getSourceToken().getString()
+                              || node.getSourceToken().getString().isEmpty())) {
+                            si.name = ((MacroNode) node).getStartToken().getString();
+                          }
+                          si.kind = 6;
                           break;
                         default:
                           break;
