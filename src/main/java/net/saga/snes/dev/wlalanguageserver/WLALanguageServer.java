@@ -94,12 +94,10 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public List<DocumentLink> documentLink(DocumentLinkParams params) {
     var uri = params.textDocument.uri.toString().replace("file://", "");
-    var nodes = parser.getNodes(String.valueOf(uri));
-    if (nodes == null) {
-      return new ArrayList<>();
-    }
-    return nodes
-        .parallelStream()
+
+    Stream<Node> nodeStream = getNodeStream(uri);
+
+    return nodeStream
         .filter(
             node ->
                 node.getType() == NodeTypes.DIRECTIVE
@@ -218,19 +216,8 @@ public class WLALanguageServer extends LanguageServer {
 
     var uri = params.textDocument.uri.toString().replace("file://", "");
 
-    var nodes = parser.getNodes(String.valueOf(uri));
-    if (nodes == null) {
-      return new ArrayList<>();
-    }
-
-    var parentNode =
-        new Node(
-            NodeTypes.ERROR, new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0)));
-    nodes.forEach(parentNode::addChild);
-    Iterator<Node> sourceIterator = parentNode.iterator();
-
-    Iterable<Node> iterable = () -> sourceIterator;
-    Stream<Node> targetStream = StreamSupport.stream(iterable.spliterator(), true);
+    
+    Stream<Node> targetStream = getNodeStream(uri); 
 
     return new ArrayList<>(
         targetStream
@@ -336,6 +323,23 @@ public class WLALanguageServer extends LanguageServer {
                   return si;
                 })
             .collect(Collectors.toSet()));
+  }
+
+  private Stream<Node> getNodeStream(String uri) {
+    var nodes = parser.getNodes(String.valueOf(uri));
+    if (nodes == null) {
+      return StreamSupport.stream(new ArrayList<Node>().spliterator(), true);
+    }
+
+    var parentNode =
+        new Node(
+            NodeTypes.ERROR, new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0)));
+    nodes.forEach(parentNode::addChild);
+
+    Iterator<Node> sourceIterator = parentNode.iterator();
+
+    Iterable<Node> iterable = () -> sourceIterator;
+    return StreamSupport.stream(iterable.spliterator(), true);
   }
 
   private Range toRange(Token sourceToken) {
