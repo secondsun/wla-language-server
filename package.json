@@ -1,7 +1,7 @@
 {
 	"name": "vscode-wla",
 	"description": "A language server example",
-	"author": "Summers PIttman",
+	"author": "Summers Pittman",
 	"license": "GPL 2.0+",
 	"version": "0.0.1",
 	"repository": {

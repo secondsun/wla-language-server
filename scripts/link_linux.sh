@@ -18,7 +18,7 @@ fi
 rm -rf dist/linux
 $JAVA_HOME/bin/jlink \
   --module-path modules/gson.jar:target/classes:target/dependency \
-  --add-modules gson,javacs,wla_server \
+  --add-modules gson,javacs,wla_server,org.glassfish.java.json \
   --launcher launcher=wla_server/net.saga.snes.dev.wlalanguageserver.Main \
   --output dist/linux \
   --compress 2 

@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeGB;
+import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -49,8 +50,7 @@ public class WLALanguageServer extends LanguageServer {
   private Path workspaceRoot;
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
-
-  private MultiFileParser parser;
+  private Project project;
 
   public WLALanguageServer(LanguageClient client) {
 
@@ -59,8 +59,7 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void initialized() {
-    this.parser = createParser();
-    parser.parse(this.workspaceRoot.toString().replace("file://", ""), "main.s");
+    this.project = new Project.Builder(this.workspaceRoot.toString()).build();
   }
 
   private MultiFileParser createParser() {
@@ -142,7 +141,7 @@ public class WLALanguageServer extends LanguageServer {
             .replace(this.workspaceRoot.toString() + "/", "");
     var root = this.workspaceRoot.toString().replace("file://", "");
 
-    parser.reparseFile(root, uri);
+    project.reparseFile(root, uri);
     publicDiagnostics(uri);
   }
 
@@ -166,14 +165,14 @@ public class WLALanguageServer extends LanguageServer {
                           .replaceFirst("/", "");
                   var root = this.workspaceRoot.toString().replace("file://", "");
 
-                  parser.reparseFile(root, fileName);
+                  project.reparseFile(root, fileName);
                   publicDiagnostics(fileName);
               }
             });
   }
 
   private void publicDiagnostics(String fileName) {
-    List<ErrorNode> errors = parser.getErrors(workspaceRoot.toString() + "/" + fileName);
+    List<ErrorNode> errors = project.getErrors(workspaceRoot.toString() + "/" + fileName);
 
     List<Diagnostic> diagnostics = new ArrayList<>();
 
@@ -216,8 +215,7 @@ public class WLALanguageServer extends LanguageServer {
 
     var uri = params.textDocument.uri.toString().replace("file://", "");
 
-    
-    Stream<Node> targetStream = getNodeStream(uri); 
+    Stream<Node> targetStream = getNodeStream(uri);
 
     return new ArrayList<>(
         targetStream
@@ -326,14 +324,15 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   private Stream<Node> getNodeStream(String uri) {
-    var nodes = parser.getNodes(String.valueOf(uri));
+    var nodes = project.getNodes(String.valueOf(uri));
     if (nodes == null) {
       return StreamSupport.stream(new ArrayList<Node>().spliterator(), true);
     }
 
     var parentNode =
         new Node(
-            NodeTypes.ERROR, new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0)));
+            NodeTypes.ERROR,
+            new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0))) {};
     nodes.forEach(parentNode::addChild);
 
     Iterator<Node> sourceIterator = parentNode.iterator();
@@ -345,7 +344,7 @@ public class WLALanguageServer extends LanguageServer {
   private Range toRange(Token sourceToken) {
     var position = sourceToken.getPosition();
     var start = new Position(position.beginLine - 1, position.beginOffset);
-    var end = new Position(position.endLine - 1, position.endOffset);
+    var end = new Position(position.getEndLine() - 1, position.getEndOffset());
     Range r = new Range(start, end);
     return r;
   }
