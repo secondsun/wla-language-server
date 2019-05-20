@@ -4,21 +4,14 @@ import com.google.gson.JsonObject;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
-import net.sagaoftherealms.tools.snes.assembler.definition.opcodes.OpCodeGB;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.MultiFileParser;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
@@ -27,22 +20,7 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.Macro
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
-import org.javacs.lsp.Diagnostic;
-import org.javacs.lsp.DidChangeConfigurationParams;
-import org.javacs.lsp.DidChangeWatchedFilesParams;
-import org.javacs.lsp.DidSaveTextDocumentParams;
-import org.javacs.lsp.DocumentLink;
-import org.javacs.lsp.DocumentLinkParams;
-import org.javacs.lsp.DocumentSymbolParams;
-import org.javacs.lsp.InitializeParams;
-import org.javacs.lsp.InitializeResult;
-import org.javacs.lsp.LanguageClient;
-import org.javacs.lsp.LanguageServer;
-import org.javacs.lsp.Location;
-import org.javacs.lsp.Position;
-import org.javacs.lsp.PublishDiagnosticsParams;
-import org.javacs.lsp.Range;
-import org.javacs.lsp.SymbolInformation;
+import org.javacs.lsp.*;
 
 public class WLALanguageServer extends LanguageServer {
 
@@ -59,11 +37,24 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void initialized() {
-    this.project = new Project.Builder(this.workspaceRoot.toString()).build();
-  }
 
-  private MultiFileParser createParser() {
-    return new MultiFileParser(OpCodeGB.opcodes());
+    this.project = new Project.Builder(this.workspaceRoot.toString()).build();
+    LOG.info("initialized");
+    LOG.info(project.getParsedFiles().toString());
+    project
+        .getParsedFiles()
+        .forEach(
+            (file) -> {
+              LOG.info(file);
+              LOG.info("Nodes for file");
+
+              LOG.info(
+                  project
+                      .getNodes(file)
+                      .stream()
+                      .map(Node::toString)
+                      .collect(Collectors.joining("\n")));
+            });
   }
 
   @Override
@@ -141,7 +132,7 @@ public class WLALanguageServer extends LanguageServer {
             .replace(this.workspaceRoot.toString() + "/", "");
     var root = this.workspaceRoot.toString().replace("file://", "");
 
-    project.reparseFile(root, uri);
+    project.parseFile(root, uri);
     publicDiagnostics(uri);
   }
 
@@ -165,7 +156,7 @@ public class WLALanguageServer extends LanguageServer {
                           .replaceFirst("/", "");
                   var root = this.workspaceRoot.toString().replace("file://", "");
 
-                  project.reparseFile(root, fileName);
+                  project.parseFile(root, fileName);
                   publicDiagnostics(fileName);
               }
             });
