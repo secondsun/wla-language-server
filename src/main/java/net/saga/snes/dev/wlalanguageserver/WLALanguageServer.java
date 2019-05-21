@@ -252,7 +252,7 @@ public class WLALanguageServer extends LanguageServer {
                         case MACRO:
                           if (!(null == node.getSourceToken().getString()
                               || node.getSourceToken().getString().isEmpty())) {
-                            si.name = ((MacroNode) node).getStartToken().getString();
+                            si.name = ((MacroNode) node).getName();
                           }
                           si.kind = 6;
                           break;
@@ -282,7 +282,7 @@ public class WLALanguageServer extends LanguageServer {
                     case MACRO:
                       if (!(null == node.getSourceToken().getString()
                           || node.getSourceToken().getString().isEmpty())) {
-                        si.name = ((MacroNode) node).getStartToken().getString();
+                        si.name = ((MacroNode) node).getName();
                       }
                       si.kind = 6;
                       break;
