@@ -26,7 +26,7 @@
 				"id": "wla",
 				"extensions": [
 					".asm",
-					"*.s"
+					".s"
 				]
 			}
 		],

@@ -23,10 +23,12 @@ export function activate(context: ExtensionContext) {
         synchronize: {
             configurationSection: 'wla',
             fileEvents: [
-                workspace.createFileSystemWatcher('**/*.s')
+                workspace.createFileSystemWatcher('retro.json'),
+                workspace.createFileSystemWatcher('**/*.s'),
+                workspace.createFileSystemWatcher('**/*.asm')
             ]
         },
-        outputChannelName: 'Wla',
+        outputChannelName: 'WLA',
         revealOutputChannelOn: 4 // never
     }
 
