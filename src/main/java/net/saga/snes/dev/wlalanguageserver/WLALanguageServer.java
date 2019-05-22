@@ -12,6 +12,7 @@ import java.util.stream.StreamSupport;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.LabelDefinitionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
@@ -27,6 +28,9 @@ public class WLALanguageServer extends LanguageServer {
   private final LanguageClient client;
   private Path workspaceRoot;
 
+  private Map<String, MacroNode> macroDefinitions = new HashMap<>();
+  private Map<String, LabelDefinitionNode> labelDefinitions = new HashMap<>();
+
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
   private Project project;
 
@@ -38,23 +42,13 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public void initialized() {
 
-    this.project = new Project.Builder(this.workspaceRoot.toString()).build();
-    LOG.info("initialized");
-    LOG.info(project.getParsedFiles().toString());
-    project
-        .getParsedFiles()
-        .forEach(
-            (file) -> {
-              LOG.info(file);
-              LOG.info("Nodes for file");
+    this.project = new Project.Builder(this.workspaceRoot.toString())
+                  .addVisitor((node -> {
 
-              LOG.info(
-                  project
-                      .getNodes(file)
-                      .stream()
-                      .map(Node::toString)
-                      .collect(Collectors.joining("\n")));
-            });
+                  }))
+                  .build();
+    LOG.info("initialized");
+
   }
 
   @Override
