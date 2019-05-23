@@ -1,5 +1,6 @@
 package net.saga.snes.dev.wlalanguageserver;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.net.URI;
 import java.nio.file.Path;
@@ -42,13 +43,10 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public void initialized() {
 
-    this.project = new Project.Builder(this.workspaceRoot.toString())
-                  .addVisitor((node -> {
+    this.project =
+        new Project.Builder(this.workspaceRoot.toString()).addVisitor((node -> {})).build();
 
-                  }))
-                  .build();
     LOG.info("initialized");
-
   }
 
   @Override
@@ -196,7 +194,11 @@ public class WLALanguageServer extends LanguageServer {
 
     final Set<AllDirectives> allowedDirectiveTypes = new HashSet<>();
     Collections.addAll(
-        allowedDirectiveTypes, AllDirectives.STRUCT, AllDirectives.DEFINE, AllDirectives.MACRO);
+        allowedDirectiveTypes,
+        AllDirectives.STRUCT,
+        AllDirectives.SECTION,
+        AllDirectives.DEFINE,
+        AllDirectives.MACRO);
 
     var uri = params.textDocument.uri.toString().replace("file://", "");
 
@@ -242,6 +244,9 @@ public class WLALanguageServer extends LanguageServer {
                         case DSTRUCT:
                         case DEFINE:
                           si.name = ((DirectiveNode) node).getArguments().getString(0);
+                          break;
+                        case SECTION:
+                          si.name = ((SectionNode) node).getName() + "";
                           break;
                         case MACRO:
                           if (!(null == node.getSourceToken().getString()
@@ -310,6 +315,9 @@ public class WLALanguageServer extends LanguageServer {
 
   private Stream<Node> getNodeStream(String uri) {
     var nodes = project.getNodes(String.valueOf(uri));
+    Gson gson = new Gson();
+    LOG.info("Node Stream");
+    LOG.info(gson.toJson(nodes));
     if (nodes == null) {
       return StreamSupport.stream(new ArrayList<Node>().spliterator(), true);
     }
