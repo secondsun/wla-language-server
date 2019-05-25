@@ -12,25 +12,40 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.LabelDefinitionNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.*;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.StructNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.expression.IdentifierNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
 import org.javacs.lsp.*;
 
 public class WLALanguageServer extends LanguageServer {
 
+  private static final Set<AllDirectives> namingDirectives = new HashSet<>();
+
+  static {
+    Collections.addAll(
+        namingDirectives,
+        AllDirectives.STRUCT,
+        AllDirectives.SECTION,
+        AllDirectives.DEFINE,
+        AllDirectives.DEF,
+        AllDirectives.DSTRUCT,
+        AllDirectives.MACRO);
+  }
+
   private final LanguageClient client;
   private Path workspaceRoot;
 
-  private Map<String, MacroNode> macroDefinitions = new HashMap<>();
-  private Map<String, LabelDefinitionNode> labelDefinitions = new HashMap<>();
+  private Map<String, List<DirectiveNode>> directiveBasedDefinitions =
+      new HashMap<>(); // Struct, macro, etc name:node, may have collisions across types (ie a
+  // macoro and struct may share a name)
+  private Map<String, LabelDefinitionNode> labelDefinitions = new HashMap<>(); // Labels name:node
+  private Set<String> openDocs = new HashSet<>();
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
   private Project project;
@@ -44,9 +59,125 @@ public class WLALanguageServer extends LanguageServer {
   public void initialized() {
 
     this.project =
-        new Project.Builder(this.workspaceRoot.toString()).addVisitor((node -> {})).build();
+        new Project.Builder(this.workspaceRoot.toString())
+            // Add definitions to directiveBasedDefinitions and labelDefinitions
+            .addVisitor(
+                (node -> {
+                  String name = "";
+                  if (node.getType().equals(NodeTypes.LABEL_DEFINITION)) {
+                    LabelDefinitionNode labelDefNode = (LabelDefinitionNode) node;
+                    labelDefinitions.put(labelDefNode.getLabelName(), labelDefNode);
+                  } else if ((node.getType().equals(NodeTypes.DIRECTIVE))) {
+                    DirectiveNode directiveNode = (DirectiveNode) node;
+                    switch (directiveNode.getDirectiveType()) {
+                      case MACRO:
+                        name = ((MacroNode) node).getName();
+                        break;
+                      case STRUCT:
+                        name = ((StructNode) node).getName();
+                        break;
+                      case DEFINE:
+                      case DEF:
+                        name = ((DirectiveNode) node).getArguments().getString(0);
+                        break;
+                      case SECTION:
+                        name = ((SectionNode) node).getName();
+                        break;
+                    }
+                    if (!name.isEmpty()) {
+                      directiveBasedDefinitions.putIfAbsent(name, new ArrayList<>());
+                      directiveBasedDefinitions.get(name).add(directiveNode);
+                    }
+                  }
+                }))
+            .build();
 
     LOG.info("initialized");
+  }
+
+  @Override
+  public Optional<List<Location>> gotoDefinition(TextDocumentPositionParams params) {
+
+    var uri = params.textDocument.uri.toString().replace("file://", "");
+    var line = params.position.line + 1;
+    var column = params.position.character;
+    Stream<Node> nodeStream = getNodeStream(uri);
+
+    LOG.info(uri + "@" + line + ":" + column);
+
+    var element =
+        nodeStream
+            .filter(
+                node -> {
+                  var token = node.getSourceToken();
+                  if (token != null && token.getPosition() != null) {
+                    var position = token.getPosition();
+                    if (token.getString() != null
+                        && token.getString().contains("bullet_head_ptr")) {
+                      LOG.info(
+                          token.getString()
+                              + "@"
+                              + token.getPosition().beginLine
+                              + ":"
+                              + token.getPosition().beginOffset);
+                    }
+                    if (line == position.beginLine
+                        && line == position.getEndLine()
+                        && column >= position.beginOffset
+                        && column <= position.getEndOffset()) {
+                      LOG.info(
+                          token.getString()
+                              + "@"
+                              + position.beginLine
+                              + ":"
+                              + position.beginOffset
+                              + " is "
+                              + node.getType());
+                      LOG.info(new Gson().toJson(node));
+                      return Set.of(
+                              NodeTypes.MACRO_CALL,
+                              NodeTypes.IDENTIFIER_EXPRESSION,
+                              NodeTypes.OPCODE_ARGUMENT)
+                          .contains(node.getType());
+                    }
+                  }
+                  return false;
+                })
+            .findFirst()
+            .get();
+
+    String name;
+    Node definition = null;
+    LOG.info(element.getSourceToken().getString() + " is " + element.getType());
+
+    switch (element.getType()) {
+      case MACRO_CALL:
+        name = ((MacroCallNode) element).getMacroNode();
+        definition = directiveBasedDefinitions.get(name).get(0);
+        break;
+      case OPCODE_ARGUMENT:
+        name = ((OpcodeArgumentNode) element).getToken().getString();
+        definition = labelDefinitions.get(name);
+        break;
+      case IDENTIFIER_EXPRESSION:
+        name = ((IdentifierNode) element).getLabelName();
+        definition = labelDefinitions.get(name);
+        if (definition == null) {
+          definition = directiveBasedDefinitions.get(name).get(0);
+        }
+        break;
+    }
+
+    if (definition != null) {
+      Location loc =
+          new Location(
+              URI.create(
+                  "file://" + this.workspaceRoot + "/" + definition.getSourceToken().getFileName()),
+              toRange(definition.getSourceToken()));
+      return Optional.of(List.of(loc));
+    } else {
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -56,13 +187,12 @@ public class WLALanguageServer extends LanguageServer {
   public InitializeResult initialize(InitializeParams params) {
     this.workspaceRoot = Paths.get(params.rootUri);
 
-    LOG.info(String.valueOf(workspaceRoot));
-    LOG.info(String.valueOf(params));
     var c = new JsonObject();
 
     var documentLinkOptions = new JsonObject();
     documentLinkOptions.addProperty("resolveProvider", false);
     c.addProperty("documentSymbolProvider", true);
+    c.addProperty("definitionProvider", true);
     c.add("documentLinkProvider", documentLinkOptions);
 
     return new InitializeResult(c);
@@ -90,18 +220,6 @@ public class WLALanguageServer extends LanguageServer {
               var arguments = ((DirectiveNode) node).getArguments();
               var argsToken = arguments.getChildren().get(0).getSourceToken();
               var range = toRange(argsToken);
-              LOG.info(
-                  "document Link file://"
-                      + this.workspaceRoot.toString()
-                      + "/"
-                      + arguments.getString(0).replace("\"", ""));
-              LOG.info(
-                  String.format(
-                      " Document Link Range {%d:%d,%d:%d}",
-                      range.start.line,
-                      range.start.character,
-                      range.end.line,
-                      range.end.character));
               link.range = range;
               link.target =
                   "file://"
@@ -125,7 +243,7 @@ public class WLALanguageServer extends LanguageServer {
     var root = this.workspaceRoot.toString().replace("file://", "");
 
     project.parseFile(root, uri);
-    publicDiagnostics(uri);
+    updateDiagnostics(uri);
   }
 
   @Override
@@ -149,12 +267,12 @@ public class WLALanguageServer extends LanguageServer {
                   var root = this.workspaceRoot.toString().replace("file://", "");
 
                   project.parseFile(root, fileName);
-                  publicDiagnostics(fileName);
+                  updateDiagnostics(fileName);
               }
             });
   }
 
-  private void publicDiagnostics(String fileName) {
+  private void updateDiagnostics(String fileName) {
     List<ErrorNode> errors = project.getErrors(workspaceRoot.toString() + "/" + fileName);
 
     List<Diagnostic> diagnostics = new ArrayList<>();
@@ -186,19 +304,10 @@ public class WLALanguageServer extends LanguageServer {
     Collections.addAll(
         allowedSymbolNodeTypes,
         NodeTypes.DIRECTIVE,
-        NodeTypes.ENUM,
         NodeTypes.SECTION,
         NodeTypes.LABEL_DEFINITION,
         NodeTypes.MACRO,
         NodeTypes.SLOT);
-
-    final Set<AllDirectives> allowedDirectiveTypes = new HashSet<>();
-    Collections.addAll(
-        allowedDirectiveTypes,
-        AllDirectives.STRUCT,
-        AllDirectives.SECTION,
-        AllDirectives.DEFINE,
-        AllDirectives.MACRO);
 
     var uri = params.textDocument.uri.toString().replace("file://", "");
 
@@ -210,14 +319,8 @@ public class WLALanguageServer extends LanguageServer {
             .filter(
                 node -> {
                   if (node.getType().equals(NodeTypes.DIRECTIVE)) {
-                    return allowedDirectiveTypes.contains(
-                        ((DirectiveNode) node).getDirectiveType());
+                    return namingDirectives.contains(((DirectiveNode) node).getDirectiveType());
                   } else {
-                    if (node.getSourceToken().getString().equals("ldh")) {
-                      LOG.info("Found a wrong typed symbol, should be opcode");
-                      LOG.info(node.toString());
-                      LOG.info(node.getSourceToken().toString());
-                    }
                     return true;
                   }
                 })
@@ -316,10 +419,9 @@ public class WLALanguageServer extends LanguageServer {
   private Stream<Node> getNodeStream(String uri) {
     var nodes = project.getNodes(String.valueOf(uri));
     Gson gson = new Gson();
-    LOG.info("Node Stream");
-    LOG.info(gson.toJson(nodes));
+
     if (nodes == null) {
-      return StreamSupport.stream(new ArrayList<Node>().spliterator(), true);
+      return StreamSupport.stream(new ArrayList<Node>().spliterator(), false);
     }
 
     var parentNode =
@@ -328,10 +430,12 @@ public class WLALanguageServer extends LanguageServer {
             new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0))) {};
     nodes.forEach(parentNode::addChild);
 
+    LOG.info(gson.toJson(nodes));
+
     Iterator<Node> sourceIterator = parentNode.iterator();
 
     Iterable<Node> iterable = () -> sourceIterator;
-    return StreamSupport.stream(iterable.spliterator(), true);
+    return StreamSupport.stream(iterable.spliterator(), false);
   }
 
   private Range toRange(Token sourceToken) {
