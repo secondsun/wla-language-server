@@ -24,6 +24,9 @@
 		"languages": [
 			{
 				"id": "wla",
+				"filenames": [
+					"retro.json"
+				],
 				"extensions": [
 					".asm",
 					".s"

@@ -21,4 +21,8 @@ $JAVA_HOME/bin/jlink \
   --add-modules gson,javacs,wla_server,org.glassfish.java.json \
   --launcher launcher=wla_server/net.saga.snes.dev.wlalanguageserver.Main \
   --output dist/linux \
+  --strip-debug \
+  --vm=server \
   --compress 2 
+
+strip -p --strip-unneeded dist/linux/lib/server/libjvm.so 

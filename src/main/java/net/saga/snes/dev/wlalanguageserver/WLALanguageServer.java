@@ -303,7 +303,6 @@ public class WLALanguageServer extends LanguageServer {
 
     var file = URI.create("file://" + workspaceRoot.toString() + "/" + fileName);
 
-
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
 
