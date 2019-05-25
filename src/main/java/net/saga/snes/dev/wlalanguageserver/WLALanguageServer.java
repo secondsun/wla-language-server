@@ -14,6 +14,7 @@ import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirecti
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.*;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.DefinitionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.StructNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
@@ -41,10 +42,10 @@ public class WLALanguageServer extends LanguageServer {
   private final LanguageClient client;
   private Path workspaceRoot;
 
-  private Map<String, List<DirectiveNode>> directiveBasedDefinitions =
+  private Map<String, List<Token>> directiveBasedDefinitions =
       new HashMap<>(); // Struct, macro, etc name:node, may have collisions across types (ie a
   // macoro and struct may share a name)
-  private Map<String, LabelDefinitionNode> labelDefinitions = new HashMap<>(); // Labels name:node
+  private Map<String, Token> labelDefinitions = new HashMap<>(); // Labels name:node
   private Set<String> openDocs = new HashSet<>();
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
@@ -66,27 +67,46 @@ public class WLALanguageServer extends LanguageServer {
                   String name = "";
                   if (node.getType().equals(NodeTypes.LABEL_DEFINITION)) {
                     LabelDefinitionNode labelDefNode = (LabelDefinitionNode) node;
-                    labelDefinitions.put(labelDefNode.getLabelName(), labelDefNode);
+                    labelDefinitions.put(
+                        labelDefNode.getLabelName(), labelDefNode.getSourceToken());
                   } else if ((node.getType().equals(NodeTypes.DIRECTIVE))) {
                     DirectiveNode directiveNode = (DirectiveNode) node;
-                    switch (directiveNode.getDirectiveType()) {
-                      case MACRO:
-                        name = ((MacroNode) node).getName();
-                        break;
-                      case STRUCT:
-                        name = ((StructNode) node).getName();
-                        break;
-                      case DEFINE:
-                      case DEF:
-                        name = ((DirectiveNode) node).getArguments().getString(0);
-                        break;
-                      case SECTION:
-                        name = ((SectionNode) node).getName();
-                        break;
-                    }
-                    if (!name.isEmpty()) {
-                      directiveBasedDefinitions.putIfAbsent(name, new ArrayList<>());
-                      directiveBasedDefinitions.get(name).add(directiveNode);
+
+                    if (directiveNode instanceof EnumNode) {
+                      var enumDirective = (EnumNode) directiveNode;
+
+                      var enumBody = enumDirective.getBody();
+                      enumBody
+                          .getChildren()
+                          .forEach(
+                              child -> {
+                                if (child instanceof DefinitionNode) {
+                                  var label = ((DefinitionNode) child).getLabel();
+                                  directiveBasedDefinitions.putIfAbsent(label, new ArrayList<>());
+                                  directiveBasedDefinitions.get(label).add(child.getSourceToken());
+                                }
+                              });
+                    } else {
+                      switch (directiveNode.getDirectiveType()) {
+                        case MACRO:
+                          name = ((MacroNode) node).getName();
+                          break;
+                        case STRUCT:
+                          name = ((StructNode) node).getName();
+                          break;
+                        case DEFINE:
+                        case DEF:
+                          name = ((DirectiveNode) node).getArguments().getString(0);
+                          break;
+                        case SECTION:
+                          name = ((SectionNode) node).getName();
+                          break;
+                      }
+                      if (!name.isEmpty()) {
+
+                        directiveBasedDefinitions.putIfAbsent(name, new ArrayList<>());
+                        directiveBasedDefinitions.get(name).add(directiveNode.getSourceToken());
+                      }
                     }
                   }
                 }))
@@ -103,8 +123,6 @@ public class WLALanguageServer extends LanguageServer {
     var column = params.position.character;
     Stream<Node> nodeStream = getNodeStream(uri);
 
-    LOG.info(uri + "@" + line + ":" + column);
-
     var element =
         nodeStream
             .filter(
@@ -112,30 +130,17 @@ public class WLALanguageServer extends LanguageServer {
                   var token = node.getSourceToken();
                   if (token != null && token.getPosition() != null) {
                     var position = token.getPosition();
-                    if (token.getString() != null
-                        && token.getString().contains("bullet_head_ptr")) {
-                      LOG.info(
-                          token.getString()
-                              + "@"
-                              + token.getPosition().beginLine
-                              + ":"
-                              + token.getPosition().beginOffset);
-                    }
                     if (line == position.beginLine
                         && line == position.getEndLine()
                         && column >= position.beginOffset
                         && column <= position.getEndOffset()) {
-                      LOG.info(
-                          token.getString()
-                              + "@"
-                              + position.beginLine
-                              + ":"
-                              + position.beginOffset
-                              + " is "
-                              + node.getType());
-                      LOG.info(new Gson().toJson(node));
+
                       return Set.of(
                               NodeTypes.MACRO_CALL,
+                              NodeTypes.STRING_EXPRESSION,
+                              NodeTypes
+                                  .MACRO_BODY, // Right now, macro bodies are not parsed but only
+                              // tokenized.
                               NodeTypes.IDENTIFIER_EXPRESSION,
                               NodeTypes.OPCODE_ARGUMENT)
                           .contains(node.getType());
@@ -144,25 +149,33 @@ public class WLALanguageServer extends LanguageServer {
                   return false;
                 })
             .findFirst()
-            .get();
+            .orElseGet(() -> null);
+
+    if (element == null) {
+      return Optional.empty();
+    }
 
     String name;
-    Node definition = null;
-    LOG.info(element.getSourceToken().getString() + " is " + element.getType());
+    Token definition = null;
 
     switch (element.getType()) {
       case MACRO_CALL:
         name = ((MacroCallNode) element).getMacroNode();
         definition = directiveBasedDefinitions.get(name).get(0);
         break;
-      case OPCODE_ARGUMENT:
-        name = ((OpcodeArgumentNode) element).getToken().getString();
-        definition = labelDefinitions.get(name);
-        break;
       case IDENTIFIER_EXPRESSION:
         name = ((IdentifierNode) element).getLabelName();
         definition = labelDefinitions.get(name);
-        if (definition == null) {
+        if (definition == null && directiveBasedDefinitions.containsKey(name)) {
+          definition = directiveBasedDefinitions.get(name).get(0);
+        }
+        break;
+      case MACRO_BODY:
+      case OPCODE_ARGUMENT:
+      case STRING_EXPRESSION:
+        name = (element).getSourceToken().getString();
+        definition = labelDefinitions.get(name);
+        if (definition == null && directiveBasedDefinitions.containsKey(name)) {
           definition = directiveBasedDefinitions.get(name).get(0);
         }
         break;
@@ -171,9 +184,8 @@ public class WLALanguageServer extends LanguageServer {
     if (definition != null) {
       Location loc =
           new Location(
-              URI.create(
-                  "file://" + this.workspaceRoot + "/" + definition.getSourceToken().getFileName()),
-              toRange(definition.getSourceToken()));
+              URI.create("file://" + this.workspaceRoot + "/" + definition.getFileName()),
+              toRange(definition));
       return Optional.of(List.of(loc));
     } else {
       return Optional.empty();
@@ -200,7 +212,7 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
-    LOG.info(String.valueOf(params.settings));
+    // LOG.info(String.valueOf(params.settings));
   }
 
   @Override
@@ -290,7 +302,7 @@ public class WLALanguageServer extends LanguageServer {
         .forEach(diagnostics::add);
 
     var file = URI.create("file://" + workspaceRoot.toString() + "/" + fileName);
-    LOG.info(String.format("{diagnosticsFile: %s}", file));
+
 
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
@@ -429,8 +441,6 @@ public class WLALanguageServer extends LanguageServer {
             NodeTypes.ERROR,
             new Token("", TokenTypes.ERROR, uri, new Token.Position(0, 0, 0, 0))) {};
     nodes.forEach(parentNode::addChild);
-
-    LOG.info(gson.toJson(nodes));
 
     Iterator<Node> sourceIterator = parentNode.iterator();
 
