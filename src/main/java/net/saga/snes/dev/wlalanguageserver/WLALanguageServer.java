@@ -1,7 +1,24 @@
 package net.saga.snes.dev.wlalanguageserver;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import net.saga.snes.dev.wlalanguageserver.features.DocumentLinkFeature;
+import net.saga.snes.dev.wlalanguageserver.features.Feature;
+import net.saga.snes.dev.wlalanguageserver.features.InitializeProject;
+import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
+import net.sagaoftherealms.tools.snes.assembler.main.Project;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.MacroCallNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.parse.expression.IdentifierNode;
+import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
+import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
+import org.javacs.lsp.*;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,19 +27,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
-import net.sagaoftherealms.tools.snes.assembler.main.Project;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.*;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.DefinitionNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.EnumNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.StructNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.parse.expression.IdentifierNode;
-import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
-import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
-import org.javacs.lsp.*;
 
 public class WLALanguageServer extends LanguageServer {
 
@@ -42,14 +46,13 @@ public class WLALanguageServer extends LanguageServer {
   private final LanguageClient client;
   private Path workspaceRoot;
 
-  private Map<String, List<Token>> directiveBasedDefinitions =
-      new HashMap<>(); // Struct, macro, etc name:node, may have collisions across types (ie a
-  // macoro and struct may share a name)
-  private Map<String, Token> labelDefinitions = new HashMap<>(); // Labels name:node
+
   private Set<String> openDocs = new HashSet<>();
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
   private Project project;
+
+  private InitializeProject initializeProject;
 
   public WLALanguageServer(LanguageClient client) {
 
@@ -57,60 +60,38 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   @Override
+  public InitializeResult initialize(InitializeParams params) {
+    this.workspaceRoot = Paths.get(params.rootUri);
+    List<Feature> features = WLALanguageServer.features();
+
+    this.initializeProject = new InitializeProject(workspaceRoot.toString(), features);
+
+    var initializeData = new JsonObject();
+
+    features.forEach(feature -> {
+      feature.initializeFeature(workspaceRoot.toString(), initializeData);
+    });
+
+    initializeData.addProperty("documentSymbolProvider", true);
+
+    return new InitializeResult(initializeData);
+  }
+
+  private static List<Feature> features() {
+    return Arrays.asList(
+            new DocumentLinkFeature()
+    );
+  }
+
+  @Override
   public void initialized() {
 
-    this.project =
-        new Project.Builder(this.workspaceRoot.toString())
-            // Add definitions to directiveBasedDefinitions and labelDefinitions
-            .addVisitor(
-                (node -> {
-                  String name = "";
-                  if (node.getType().equals(NodeTypes.LABEL_DEFINITION)) {
-                    LabelDefinitionNode labelDefNode = (LabelDefinitionNode) node;
-                    labelDefinitions.put(
-                        labelDefNode.getLabelName(), labelDefNode.getSourceToken());
-                  } else if ((node.getType().equals(NodeTypes.DIRECTIVE))) {
-                    DirectiveNode directiveNode = (DirectiveNode) node;
+    this.project = initializeProject.getProject();
+//        new Project.Builder(this.workspaceRoot.toString())
+//            // Add definitions to directiveBasedDefinitions and labelDefinitions
+//            .addVisitor(
 
-                    if (directiveNode instanceof EnumNode) {
-                      var enumDirective = (EnumNode) directiveNode;
-
-                      var enumBody = enumDirective.getBody();
-                      enumBody
-                          .getChildren()
-                          .forEach(
-                              child -> {
-                                if (child instanceof DefinitionNode) {
-                                  var label = ((DefinitionNode) child).getLabel();
-                                  directiveBasedDefinitions.putIfAbsent(label, new ArrayList<>());
-                                  directiveBasedDefinitions.get(label).add(child.getSourceToken());
-                                }
-                              });
-                    } else {
-                      switch (directiveNode.getDirectiveType()) {
-                        case MACRO:
-                          name = ((MacroNode) node).getName();
-                          break;
-                        case STRUCT:
-                          name = ((StructNode) node).getName();
-                          break;
-                        case DEFINE:
-                        case DEF:
-                          name = ((DirectiveNode) node).getArguments().getString(0);
-                          break;
-                        case SECTION:
-                          name = ((SectionNode) node).getName();
-                          break;
-                      }
-                      if (!name.isEmpty()) {
-
-                        directiveBasedDefinitions.putIfAbsent(name, new ArrayList<>());
-                        directiveBasedDefinitions.get(name).add(directiveNode.getSourceToken());
-                      }
-                    }
-                  }
-                }))
-            .build();
+//            .build();
 
     LOG.info("initialized");
   }
@@ -194,21 +175,6 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void shutdown() {}
-
-  @Override
-  public InitializeResult initialize(InitializeParams params) {
-    this.workspaceRoot = Paths.get(params.rootUri);
-
-    var c = new JsonObject();
-
-    var documentLinkOptions = new JsonObject();
-    documentLinkOptions.addProperty("resolveProvider", false);
-    c.addProperty("documentSymbolProvider", true);
-    c.addProperty("definitionProvider", true);
-    c.add("documentLinkProvider", documentLinkOptions);
-
-    return new InitializeResult(c);
-  }
 
   @Override
   public void didChangeConfiguration(DidChangeConfigurationParams params) {
@@ -429,7 +395,6 @@ public class WLALanguageServer extends LanguageServer {
 
   private Stream<Node> getNodeStream(String uri) {
     var nodes = project.getNodes(String.valueOf(uri));
-    Gson gson = new Gson();
 
     if (nodes == null) {
       return StreamSupport.stream(new ArrayList<Node>().spliterator(), false);
@@ -447,7 +412,7 @@ public class WLALanguageServer extends LanguageServer {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  private Range toRange(Token sourceToken) {
+  public static Range toRange(Token sourceToken) {
     var position = sourceToken.getPosition();
     var start = new Position(position.beginLine - 1, position.beginOffset);
     var end = new Position(position.getEndLine() - 1, position.getEndOffset());
