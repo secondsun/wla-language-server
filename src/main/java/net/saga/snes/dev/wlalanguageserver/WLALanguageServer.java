@@ -102,7 +102,7 @@ public class WLALanguageServer extends LanguageServer {
     var uri = params.textDocument.uri.toString().replace("file://", "");
     var line = params.position.line + 1;
     var column = params.position.character;
-    Stream<Node> nodeStream = getNodeStream(uri);
+    Stream<Node> nodeStream = getNodeStream(uri, project);
 
     var element =
         nodeStream
@@ -393,7 +393,7 @@ public class WLALanguageServer extends LanguageServer {
             .collect(Collectors.toSet()));
   }
 
-  private Stream<Node> getNodeStream(String uri) {
+  public static Stream<Node> getNodeStream(String uri, Project project) {
     var nodes = project.getNodes(String.valueOf(uri));
 
     if (nodes == null) {

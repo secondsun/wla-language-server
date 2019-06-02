@@ -1,6 +1,7 @@
 package net.saga.snes.dev.wlalanguageserver.features;
 
 import com.google.gson.JsonObject;
+import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
 
 /**
@@ -12,7 +13,7 @@ public interface Feature<PARAMS, OUTPUT> {
 
     void initializeFeature(String workspaceRoot, JsonObject initializeData);
 
-    Visitor getFeatureVisitor();
+    Visitor getFeatureVisitor(Project project);
 
-    void handle(PARAMS params, OUTPUT output);
+    OUTPUT handle(PARAMS params);
 }

@@ -1,6 +1,7 @@
 package net.saga.snes.dev.wlalanguageserver.features;
 
 import com.google.gson.JsonObject;
+import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.LabelDefinitionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MacroCallNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -21,6 +22,9 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static net.saga.snes.dev.wlalanguageserver.WLALanguageServer.getNodeStream;
+import static net.saga.snes.dev.wlalanguageserver.WLALanguageServer.toRange;
+
 
 public class GotoDefinitionFeature implements Feature<TextDocumentPositionParams, Optional<List<Location>>> {
 
@@ -30,6 +34,7 @@ public class GotoDefinitionFeature implements Feature<TextDocumentPositionParams
     private Map<String, Token> labelDefinitions = new HashMap<>(); // Labels name:node
 
     private String workspaceRoot;
+    private Project project;
 
     @Override
     public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
@@ -39,7 +44,8 @@ public class GotoDefinitionFeature implements Feature<TextDocumentPositionParams
     }
 
     @Override
-    public Visitor getFeatureVisitor() {
+    public Visitor getFeatureVisitor(Project project) {
+        this.project = project;
         return (node -> {
             String name = "";
             if (node.getType().equals(NodeTypes.LABEL_DEFINITION)) {
@@ -90,12 +96,12 @@ public class GotoDefinitionFeature implements Feature<TextDocumentPositionParams
     }
 
     @Override
-    public void handle(TextDocumentPositionParams params, Optional<List<Location>> locations) {
+    public Optional<List<Location>>  handle(TextDocumentPositionParams params) {
         var uri = params.textDocument.uri.toString().replace("file://", "");
         var line = params.position.line + 1;
         var column = params.position.character;
-        
-        Stream<Node> nodeStream = getNodeStream(uri);
+
+        Stream<Node> nodeStream = getNodeStream(uri, this.project);
 
         var element =
                 nodeStream
