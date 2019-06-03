@@ -46,15 +46,7 @@ public class DocumentSymbolFeature
 
   @Override
   public Visitor getFeatureVisitor() {
-    return node -> {
-      var fileName = node.getSourceToken().getFileName();
-      var list = includesNodes.getOrDefault(fileName, new ArrayList<>(50));
-      if (node.getType().equals(NodeTypes.DIRECTIVE)
-          && ((DirectiveNode) node).getDirectiveType().equals(AllDirectives.INCLUDE)) {
-        list.add(node);
-        includesNodes.put(fileName, list);
-      }
-    };
+    return node -> {};
   }
 
   @Override
