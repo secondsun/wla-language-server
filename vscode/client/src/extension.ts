@@ -9,7 +9,9 @@ import { workspace, ExtensionContext, IndentAction, languages } from 'vscode';
 import {
 	LanguageClient,
 	LanguageClientOptions,
-	ServerOptions
+    ServerOptions,
+    RevealOutputChannelOn,
+    TransportKind
 } from 'vscode-languageclient';
 
 let client: LanguageClient;
@@ -29,7 +31,7 @@ export function activate(context: ExtensionContext) {
             ]
         },
         outputChannelName: 'WLA',
-        revealOutputChannelOn: 4 // never
+        revealOutputChannelOn: RevealOutputChannelOn.Info // never
     }
 
     let launcherRelativePath = platformSpecificLauncher();
@@ -40,19 +42,26 @@ export function activate(context: ExtensionContext) {
     
     // Start the child java process
     let serverOptions: ServerOptions = {
-        command: launcher,
-        args: [],
-        options: { cwd: context.extensionPath }
+            run : { command: launcher, transport: TransportKind.stdio,
+                    options: { cwd: context.extensionPath }
+            },
+            debug : { command: launcher, transport: TransportKind.stdio,
+                options: { cwd: context.extensionPath }
+        }
     }
+    
 
 
     // Create the language client and start the client.
     let client = new LanguageClient('wla', 'WLA Language Server', serverOptions, clientOptions);
-    let disposable = client.start();
-
-    // Push the disposable to the context's subscriptions so that the 
-    // client can be deactivated on extension deactivation
-    context.subscriptions.push(disposable);
+    try {
+        let disposable = client.start();
+        // Push the disposable to the context's subscriptions so that the 
+        // client can be deactivated on extension deactivation
+        context.subscriptions.push(disposable);
+    } catch (error) {
+        console.log(error)
+    }
 
 }
 

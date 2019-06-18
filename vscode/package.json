@@ -11,10 +11,10 @@
 	"publisher": "sagaoftherealms",
 	"categories": [],
 	"keywords": [
-		"multi-root ready homebrew assembly"
+		"homebrew assembly"
 	],
 	"engines": {
-		"vscode": "^1.23.0"
+		"vscode": "^1.26.0"
 	},
 	"activationEvents": [
 		"onLanguage:wla"
@@ -63,10 +63,6 @@
 		"watch": "tsc -w -b",
 		"postinstall": "cd client && npm install && cd ..",
 		"test": "sh ./scripts/e2e.sh"
-	},
-	"dependencies": {
-		"npm": "^6.9.0",
-		"vscode-languageclient": "^5.2.1"
 	},
 	"devDependencies": {
 		"@types/mocha": "^5.2.0",
