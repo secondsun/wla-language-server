@@ -74,7 +74,7 @@ export function deactivate(): Thenable<void> | undefined {
 function platformSpecificLauncher(): string[] {
 	switch (process.platform) {
 		case 'win32':
-            return ['dist', 'windows', 'bin', 'launcher'];
+            return ['dist', 'windows', 'bin', 'launcher.bat'];
 
 		case 'darwin':
 			return ['dist', 'mac', 'bin', 'launcher'];
