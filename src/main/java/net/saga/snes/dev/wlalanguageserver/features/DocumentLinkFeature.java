@@ -38,6 +38,11 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
 
   @Override
   public List<DocumentLink> handle(Project project, DocumentLinkParams documentLinkParams) {
+    LOG.info("DocumentLInkFeature.handle workspaceRoot is " + this.workspaceRoot);
+    LOG.info(
+        "DocumentLInkFeature.handle uri passed in is "
+            + documentLinkParams.textDocument.uri.toString());
+
     var uri =
         documentLinkParams
             .textDocument

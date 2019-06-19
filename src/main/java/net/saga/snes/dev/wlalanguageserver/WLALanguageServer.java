@@ -4,8 +4,6 @@ import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
 import com.google.gson.JsonObject;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 import net.saga.snes.dev.wlalanguageserver.features.*;
@@ -16,7 +14,7 @@ import org.javacs.lsp.*;
 public class WLALanguageServer extends LanguageServer {
 
   private final LanguageClient client;
-  private Path workspaceRoot;
+  private String workspaceRoot;
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
   private Project project;
@@ -33,16 +31,16 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public InitializeResult initialize(InitializeParams params) {
-    this.workspaceRoot = Paths.get(params.rootUri);
+    this.workspaceRoot = params.rootUri.toString();
     List<Feature> features = features();
 
-    this.initializeProject = new InitializeProject(workspaceRoot.toString(), features);
+    this.initializeProject = new InitializeProject(workspaceRoot, features);
 
     var initializeData = new JsonObject();
 
     features.forEach(
         feature -> {
-          feature.initializeFeature(workspaceRoot.toString(), initializeData);
+          feature.initializeFeature(workspaceRoot, initializeData);
         });
 
     return new InitializeResult(initializeData);
@@ -87,8 +85,8 @@ public class WLALanguageServer extends LanguageServer {
             .uri
             .toString()
             .replace("file://", "")
-            .replace(this.workspaceRoot.toString() + "/", "");
-    var root = this.workspaceRoot.toString().replace("file://", "");
+            .replace(this.workspaceRoot + "/", "");
+    var root = this.workspaceRoot.replace("file://", "");
 
     project.parseFile(root, uri);
     updateDiagnostics(uri);
@@ -110,9 +108,9 @@ public class WLALanguageServer extends LanguageServer {
                           .uri
                           .toString()
                           .replace("file://", "")
-                          .replace(this.workspaceRoot.toString(), "")
+                          .replace(this.workspaceRoot, "")
                           .replaceFirst("/", "");
-                  var root = this.workspaceRoot.toString().replace("file://", "");
+                  var root = this.workspaceRoot.replace("file://", "");
 
                   project.parseFile(root, fileName);
                   updateDiagnostics(fileName);
@@ -121,7 +119,7 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   private void updateDiagnostics(String fileName) {
-    List<ErrorNode> errors = project.getErrors(workspaceRoot.toString() + "/" + fileName);
+    List<ErrorNode> errors = project.getErrors(workspaceRoot + "/" + fileName);
 
     List<Diagnostic> diagnostics = new ArrayList<>();
 
@@ -137,7 +135,7 @@ public class WLALanguageServer extends LanguageServer {
             })
         .forEach(diagnostics::add);
 
-    var file = URI.create("file://" + workspaceRoot.toString() + "/" + fileName);
+    var file = URI.create("file://" + workspaceRoot + "/" + fileName);
 
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
