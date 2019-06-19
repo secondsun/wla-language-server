@@ -34,7 +34,7 @@ public class WLALanguageServer extends LanguageServer {
     this.workspaceRoot = params.rootUri.toString();
     List<Feature> features = features();
 
-    this.initializeProject = new InitializeProject(workspaceRoot, features);
+    this.initializeProject = new InitializeProject(params.rootUri, features);
 
     var initializeData = new JsonObject();
 

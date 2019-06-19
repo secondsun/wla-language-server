@@ -4,7 +4,7 @@
 set -e
 
 # Needed if you have a java version other than 11 as default
-JAVA_HOME=/c/Program\ Files/Java/jdk-12.0.1/
+JAVA_HOME=/c/Program\ Files/OpenJDK/jdk-12.0.1/
 
 mvn compile
 
@@ -29,8 +29,8 @@ REAL_JAVA_HOME="/c/Program Files/Java/jdk-12.0.1/"
 
 # Build in dist/windows
 rm -rf dist/windows
-/c/Program\ Files/Java/jdk-12.0.1/bin/jlink \
-  --module-path "/c/Program\ Files/Java/jdk-12.0.1/jmods;modules/gson.jar;target/classes;target/dependency" \
+/c/Program\ Files/OpenJDK/jdk-12.0.1/bin/jlink \
+  --module-path "/c/Program\ Files/OpenJDK/jdk-12.0.1/jmods;modules/gson.jar;target/classes;target/dependency" \
   --add-modules gson,javacs,wla_server,org.glassfish.java.json \
   --launcher launcher=wla_server/net.saga.snes.dev.wlalanguageserver.Main \
   --output dist/windows \

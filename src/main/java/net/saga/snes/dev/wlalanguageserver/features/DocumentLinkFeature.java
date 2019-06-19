@@ -43,13 +43,7 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
         "DocumentLInkFeature.handle uri passed in is "
             + documentLinkParams.textDocument.uri.toString());
 
-    var uri =
-        documentLinkParams
-            .textDocument
-            .uri
-            .toString()
-            .replace("file://", "")
-            .split(this.workspaceRoot + "/")[1];
+    var uri = documentLinkParams.textDocument.uri.toString().split(this.workspaceRoot + "/")[1];
     var documentLinks = new ArrayList<DocumentLink>();
 
     Stream<Node> targetStream = getNodeStream(uri, project);
