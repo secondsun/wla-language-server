@@ -61,8 +61,7 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
               var argsToken = arguments.getChildren().get(0).getSourceToken();
               var range = toRange(argsToken);
               link.range = range;
-              link.target =
-                  "file://" + this.workspaceRoot + "/" + arguments.getString(0).replace("\"", "");
+              link.target = this.workspaceRoot + "/" + arguments.getString(0).replace("\"", "");
 
               documentLinks.add(link);
             });
