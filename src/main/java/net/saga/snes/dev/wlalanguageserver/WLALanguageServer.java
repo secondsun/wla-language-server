@@ -79,16 +79,9 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void didSaveTextDocument(DidSaveTextDocumentParams params) {
-    var uri =
-        params
-            .textDocument
-            .uri
-            .toString()
-            .replace("file://", "")
-            .replace(this.workspaceRoot + "/", "");
-    var root = this.workspaceRoot.replace("file://", "");
+    var uri = params.textDocument.uri.toString().replace(this.workspaceRoot + "/", "");
 
-    project.parseFile(root, uri);
+    project.parseFile(this.workspaceRoot, uri);
     updateDiagnostics(uri);
   }
 
@@ -103,14 +96,8 @@ public class WLALanguageServer extends LanguageServer {
               switch (change.type) {
                 case 1:
                 case 2:
-                  var fileName =
-                      change
-                          .uri
-                          .toString()
-                          .replace("file://", "")
-                          .replace(this.workspaceRoot, "")
-                          .replaceFirst("/", "");
-                  var root = this.workspaceRoot.replace("file://", "");
+                  var fileName = change.uri.toString().replace(this.workspaceRoot + "/", "");
+                  var root = this.workspaceRoot;
 
                   project.parseFile(root, fileName);
                   updateDiagnostics(fileName);
@@ -135,7 +122,7 @@ public class WLALanguageServer extends LanguageServer {
             })
         .forEach(diagnostics::add);
 
-    var file = URI.create("file://" + workspaceRoot + "/" + fileName);
+    var file = URI.create(workspaceRoot + "/" + fileName);
 
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
