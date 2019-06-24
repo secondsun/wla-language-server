@@ -34,10 +34,10 @@ public class GotoDefinitionFeature
   // macoro and struct may share a name)
   private Map<String, Token> labelDefinitions = new HashMap<>(); // Labels name:node
 
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
     this.workspaceRoot = workspaceRoot;
     initializeData.addProperty("definitionProvider", true);
   }
@@ -94,7 +94,7 @@ public class GotoDefinitionFeature
 
   @Override
   public Optional<List<Location>> handle(Project project, TextDocumentPositionParams params) {
-    var uri = params.textDocument.uri.toString().split(this.workspaceRoot + "/")[1];
+    var uri = params.textDocument.uri.toString().split(this.workspaceRoot.toString() + "/")[1];
     var line = params.position.line + 1;
     var column = params.position.character;
 

@@ -26,7 +26,7 @@ public class DocumentSymbolFeature
 
   private final HashMap<String, List<Node>> includesNodes = new HashMap<>(100);
 
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   private static final Set<AllDirectives> namingDirectives = new HashSet<>();
 
@@ -42,7 +42,7 @@ public class DocumentSymbolFeature
   }
 
   @Override
-  public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
     initializeData.addProperty("documentSymbolProvider", true);
     this.workspaceRoot = workspaceRoot;
   }
@@ -65,7 +65,7 @@ public class DocumentSymbolFeature
         NodeTypes.MACRO,
         NodeTypes.SLOT);
 
-    var uri = params.textDocument.uri.toString().split(this.workspaceRoot + "/")[1];
+    var uri = params.textDocument.uri.toString().split(this.workspaceRoot.toString() + "/")[1];
 
     Stream<Node> targetStream = getNodeStream(uri, project);
 

@@ -4,6 +4,7 @@ import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
 import com.google.gson.JsonObject;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -21,10 +22,10 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
 
   private static final Logger LOG = Logger.getLogger(DocumentLinkFeature.class.getName());
 
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
     var documentLinkOptions = new JsonObject();
     documentLinkOptions.addProperty("resolveProvider", false);
     initializeData.add("documentLinkProvider", documentLinkOptions);
@@ -61,7 +62,8 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
               var argsToken = arguments.getChildren().get(0).getSourceToken();
               var range = toRange(argsToken);
               link.range = range;
-              link.target = this.workspaceRoot + "/" + arguments.getString(0).replace("\"", "");
+              link.target =
+                  this.workspaceRoot.toString() + "/" + arguments.getString(0).replace("\"", "");
 
               documentLinks.add(link);
             });

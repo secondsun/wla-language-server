@@ -14,7 +14,7 @@ import org.javacs.lsp.*;
 public class WLALanguageServer extends LanguageServer {
 
   private final LanguageClient client;
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   private static final Logger LOG = Logger.getLogger(WLALanguageServer.class.getName());
   private Project project;
@@ -31,7 +31,7 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public InitializeResult initialize(InitializeParams params) {
-    this.workspaceRoot = params.rootUri.toString();
+    this.workspaceRoot = params.rootUri;
     List<Feature> features = features();
 
     this.initializeProject = new InitializeProject(params.rootUri, features);
@@ -79,7 +79,7 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void didSaveTextDocument(DidSaveTextDocumentParams params) {
-    var uri = params.textDocument.uri.toString().replace(this.workspaceRoot + "/", "");
+    var uri = params.textDocument.uri.relativize(this.workspaceRoot).toString();
 
     project.parseFile(this.workspaceRoot, uri);
     updateDiagnostics(uri);
@@ -96,7 +96,7 @@ public class WLALanguageServer extends LanguageServer {
               switch (change.type) {
                 case 1:
                 case 2:
-                  var fileName = change.uri.toString().replace(this.workspaceRoot + "/", "");
+                  var fileName = change.uri.relativize(this.workspaceRoot).toString();
                   var root = this.workspaceRoot;
 
                   project.parseFile(root, fileName);
@@ -106,7 +106,7 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   private void updateDiagnostics(String fileName) {
-    List<ErrorNode> errors = project.getErrors(workspaceRoot + "/" + fileName);
+    List<ErrorNode> errors = project.getErrors(fileName);
 
     List<Diagnostic> diagnostics = new ArrayList<>();
 
@@ -122,7 +122,7 @@ public class WLALanguageServer extends LanguageServer {
             })
         .forEach(diagnostics::add);
 
-    var file = URI.create(workspaceRoot + "/" + fileName);
+    var file = workspaceRoot.resolve(fileName);
 
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
