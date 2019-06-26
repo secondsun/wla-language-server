@@ -96,7 +96,7 @@ public class WLALanguageServer extends LanguageServer {
               switch (change.type) {
                 case 1:
                 case 2:
-                  var fileName = change.uri.relativize(this.workspaceRoot).toString();
+                  var fileName = this.workspaceRoot.relativize(change.uri).toString();
                   var root = this.workspaceRoot;
 
                   project.parseFile(root, fileName);
@@ -106,8 +106,9 @@ public class WLALanguageServer extends LanguageServer {
   }
 
   private void updateDiagnostics(String fileName) {
+    LOG.info(String.format("updateDiagnostics(%s)", fileName));
     List<ErrorNode> errors = project.getErrors(fileName);
-
+    LOG.info(String.format("updateDiagnostics errorsFound %d", errors.size()));
     List<Diagnostic> diagnostics = new ArrayList<>();
 
     errors
@@ -122,7 +123,7 @@ public class WLALanguageServer extends LanguageServer {
             })
         .forEach(diagnostics::add);
 
-    var file = workspaceRoot.resolve(fileName);
+    var file = URI.create(workspaceRoot.toString() + "/" + (fileName));
 
     client.publishDiagnostics(new PublishDiagnosticsParams(file, diagnostics));
   }
