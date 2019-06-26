@@ -4,6 +4,7 @@ import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
 import com.google.gson.JsonObject;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -21,10 +22,10 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
 
   private static final Logger LOG = Logger.getLogger(DocumentLinkFeature.class.getName());
 
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
     var documentLinkOptions = new JsonObject();
     documentLinkOptions.addProperty("resolveProvider", false);
     initializeData.add("documentLinkProvider", documentLinkOptions);
@@ -38,13 +39,12 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
 
   @Override
   public List<DocumentLink> handle(Project project, DocumentLinkParams documentLinkParams) {
-    var uri =
-        documentLinkParams
-            .textDocument
-            .uri
-            .toString()
-            .replace("file://", "")
-            .split(this.workspaceRoot + "/")[1];
+    LOG.info("DocumentLInkFeature.handle workspaceRoot is " + this.workspaceRoot);
+    LOG.info(
+        "DocumentLInkFeature.handle uri passed in is "
+            + documentLinkParams.textDocument.uri.toString());
+
+    var uri = documentLinkParams.textDocument.uri.toString().split(this.workspaceRoot + "/")[1];
     var documentLinks = new ArrayList<DocumentLink>();
 
     Stream<Node> targetStream = getNodeStream(uri, project);
@@ -63,7 +63,7 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
               var range = toRange(argsToken);
               link.range = range;
               link.target =
-                  "file://" + this.workspaceRoot + "/" + arguments.getString(0).replace("\"", "");
+                  this.workspaceRoot.toString() + "/" + arguments.getString(0).replace("\"", "");
 
               documentLinks.add(link);
             });

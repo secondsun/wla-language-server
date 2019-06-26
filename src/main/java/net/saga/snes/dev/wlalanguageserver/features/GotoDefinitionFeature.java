@@ -6,6 +6,7 @@ import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 import com.google.gson.JsonObject;
 import java.net.URI;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.LabelDefinitionNode;
@@ -26,16 +27,17 @@ import org.javacs.lsp.TextDocumentPositionParams;
 
 public class GotoDefinitionFeature
     implements Feature<TextDocumentPositionParams, Optional<List<Location>>> {
+  private static final Logger LOG = Logger.getLogger(GotoDefinitionFeature.class.getName());
 
   private Map<String, List<Token>> directiveBasedDefinitions =
       new HashMap<>(); // Struct, macro, etc name:node, may have collisions across types (ie a
   // macoro and struct may share a name)
   private Map<String, Token> labelDefinitions = new HashMap<>(); // Labels name:node
 
-  private String workspaceRoot;
+  private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(String workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
     this.workspaceRoot = workspaceRoot;
     initializeData.addProperty("definitionProvider", true);
   }
@@ -92,7 +94,7 @@ public class GotoDefinitionFeature
 
   @Override
   public Optional<List<Location>> handle(Project project, TextDocumentPositionParams params) {
-    var uri = params.textDocument.uri.toString().replace("file://", "");
+    var uri = params.textDocument.uri.toString().split(this.workspaceRoot.toString() + "/")[1];
     var line = params.position.line + 1;
     var column = params.position.character;
 
@@ -159,8 +161,7 @@ public class GotoDefinitionFeature
     if (definition != null) {
       Location loc =
           new Location(
-              URI.create("file://" + this.workspaceRoot + "/" + definition.getFileName()),
-              toRange(definition));
+              URI.create(this.workspaceRoot + "/" + definition.getFileName()), toRange(definition));
       return Optional.of(List.of(loc));
     } else {
       return Optional.empty();
