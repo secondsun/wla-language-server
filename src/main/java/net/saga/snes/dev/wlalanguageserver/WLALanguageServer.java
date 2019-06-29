@@ -23,6 +23,7 @@ public class WLALanguageServer extends LanguageServer {
   private DocumentLinkFeature documentLinkFeature = new DocumentLinkFeature();
   private GotoDefinitionFeature gotoDefinitionFeature = new GotoDefinitionFeature();
   private DocumentSymbolFeature documentSymbolFeature = new DocumentSymbolFeature();
+  private FindReferenceFeature findReferenceFeature = new FindReferenceFeature();
 
   public WLALanguageServer(LanguageClient client) {
 
@@ -48,7 +49,10 @@ public class WLALanguageServer extends LanguageServer {
 
   private List<Feature> features() {
     return Arrays.asList(
-        this.documentLinkFeature, this.gotoDefinitionFeature, this.documentSymbolFeature);
+        this.documentLinkFeature,
+        this.gotoDefinitionFeature,
+        this.documentSymbolFeature,
+        this.findReferenceFeature);
   }
 
   @Override
@@ -83,6 +87,11 @@ public class WLALanguageServer extends LanguageServer {
 
     project.parseFile(this.workspaceRoot, uri);
     updateDiagnostics(uri);
+  }
+
+  @Override
+  public Optional<List<Location>> findReferences(ReferenceParams params) {
+    return this.findReferenceFeature.handle(project, params);
   }
 
   @Override
