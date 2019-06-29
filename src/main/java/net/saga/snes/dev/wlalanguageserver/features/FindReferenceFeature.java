@@ -81,6 +81,7 @@ public class FindReferenceFeature implements Feature<ReferenceParams, Optional<L
                   return element
                       .getSourceToken()
                       .getString()
+                      .replace(":", "")
                       .trim()
                       .equals(node.getSourceToken().getString().trim());
                 })
