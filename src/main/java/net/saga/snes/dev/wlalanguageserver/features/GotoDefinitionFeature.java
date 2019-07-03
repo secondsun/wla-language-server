@@ -3,11 +3,11 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
-import com.google.gson.JsonObject;
 import java.net.URI;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.json.JsonObjectBuilder;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.LabelDefinitionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.MacroCallNode;
@@ -37,9 +37,9 @@ public class GotoDefinitionFeature
   private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
+  public void initializeFeature(URI workspaceRoot, JsonObjectBuilder initializeData) {
     this.workspaceRoot = workspaceRoot;
-    initializeData.addProperty("definitionProvider", true);
+    initializeData.add("definitionProvider", true);
   }
 
   @Override

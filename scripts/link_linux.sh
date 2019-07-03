@@ -17,8 +17,8 @@ fi
 # Build using jlink
 rm -rf dist/linux
 $JAVA_HOME/bin/jlink \
-  --module-path modules/gson.jar:target/classes:target/dependency \
-  --add-modules gson,javacs,wla_server,org.glassfish.java.json \
+  --module-path target/classes:target/dependency \
+  --add-modules ALL-MODULE-PATH \
   --launcher launcher=wla_server/net.saga.snes.dev.wlalanguageserver.Main \
   --output dist/linux \
   --vm=server \

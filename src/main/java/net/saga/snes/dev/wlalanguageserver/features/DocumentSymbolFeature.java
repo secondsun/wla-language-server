@@ -3,11 +3,11 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
-import com.google.gson.JsonObject;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.json.JsonObjectBuilder;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -42,8 +42,8 @@ public class DocumentSymbolFeature
   }
 
   @Override
-  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
-    initializeData.addProperty("documentSymbolProvider", true);
+  public void initializeFeature(URI workspaceRoot, JsonObjectBuilder initializeData) {
+    initializeData.add("documentSymbolProvider", true);
     this.workspaceRoot = workspaceRoot;
   }
 

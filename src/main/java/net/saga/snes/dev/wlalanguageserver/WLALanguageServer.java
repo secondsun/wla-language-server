@@ -2,10 +2,13 @@ package net.saga.snes.dev.wlalanguageserver;
 
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
-import com.google.gson.JsonObject;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
+import javax.json.Json;
 import net.saga.snes.dev.wlalanguageserver.features.*;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
@@ -37,14 +40,14 @@ public class WLALanguageServer extends LanguageServer {
 
     this.initializeProject = new InitializeProject(params.rootUri, features);
 
-    var initializeData = new JsonObject();
+    var initializeData = Json.createObjectBuilder();
 
     features.forEach(
         feature -> {
           feature.initializeFeature(workspaceRoot, initializeData);
         });
 
-    return new InitializeResult(initializeData);
+    return new InitializeResult(initializeData.build());
   }
 
   private List<Feature> features() {

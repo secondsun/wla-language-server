@@ -3,13 +3,13 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
-import com.google.gson.JsonObject;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.json.JsonObjectBuilder;
 import net.saga.snes.dev.wlalanguageserver.Utils;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -23,8 +23,8 @@ public class FindReferenceFeature implements Feature<ReferenceParams, Optional<L
   private static final Logger LOG = Logger.getLogger(FindReferenceFeature.class.getName());
 
   @Override
-  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
-    initializeData.addProperty("referencesProvider", true);
+  public void initializeFeature(URI workspaceRoot, JsonObjectBuilder initializeData) {
+    initializeData.add("referencesProvider", true);
     this.workspaceRoot = workspaceRoot;
   }
 

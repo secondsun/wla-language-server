@@ -3,12 +3,13 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
-import com.google.gson.JsonObject;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import net.sagaoftherealms.tools.snes.assembler.definition.directives.AllDirectives;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
@@ -25,9 +26,9 @@ public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<Doc
   private URI workspaceRoot;
 
   @Override
-  public void initializeFeature(URI workspaceRoot, JsonObject initializeData) {
-    var documentLinkOptions = new JsonObject();
-    documentLinkOptions.addProperty("resolveProvider", false);
+  public void initializeFeature(URI workspaceRoot, JsonObjectBuilder initializeData) {
+    var documentLinkOptions = Json.createObjectBuilder();
+    documentLinkOptions.add("resolveProvider", false);
     initializeData.add("documentLinkProvider", documentLinkOptions);
     this.workspaceRoot = workspaceRoot;
   }
