@@ -3,6 +3,8 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
+import dev.secondsun.lsp.Location;
+import dev.secondsun.lsp.ReferenceParams;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +16,6 @@ import net.saga.snes.dev.wlalanguageserver.Utils;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
-import org.javacs.lsp.Location;
-import org.javacs.lsp.ReferenceParams;
 
 public class FindReferenceFeature implements Feature<ReferenceParams, Optional<List<Location>>> {
 

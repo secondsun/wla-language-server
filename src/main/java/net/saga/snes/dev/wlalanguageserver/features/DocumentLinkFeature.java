@@ -3,6 +3,8 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
+import dev.secondsun.lsp.DocumentLink;
+import dev.secondsun.lsp.DocumentLinkParams;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +18,6 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.DirectiveNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
-import org.javacs.lsp.DocumentLink;
-import org.javacs.lsp.DocumentLinkParams;
 
 public class DocumentLinkFeature implements Feature<DocumentLinkParams, List<DocumentLink>> {
 

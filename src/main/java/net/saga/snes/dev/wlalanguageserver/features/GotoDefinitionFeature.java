@@ -3,6 +3,8 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
+import dev.secondsun.lsp.Location;
+import dev.secondsun.lsp.TextDocumentPositionParams;
 import java.net.URI;
 import java.util.*;
 import java.util.logging.Logger;
@@ -22,8 +24,6 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.Sec
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.expression.IdentifierNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
-import org.javacs.lsp.Location;
-import org.javacs.lsp.TextDocumentPositionParams;
 
 public class GotoDefinitionFeature
     implements Feature<TextDocumentPositionParams, Optional<List<Location>>> {

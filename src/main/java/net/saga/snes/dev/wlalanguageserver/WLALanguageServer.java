@@ -2,6 +2,7 @@ package net.saga.snes.dev.wlalanguageserver;
 
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
+import dev.secondsun.lsp.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +13,6 @@ import javax.json.Json;
 import net.saga.snes.dev.wlalanguageserver.features.*;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.ErrorNode;
-import org.javacs.lsp.*;
 
 public class WLALanguageServer extends LanguageServer {
 

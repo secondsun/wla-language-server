@@ -11,8 +11,8 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.javacs</groupId>
-            <artifactId>javac-services</artifactId>
+            <groupId>dev.secondsun</groupId>
+            <artifactId>languageserver</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

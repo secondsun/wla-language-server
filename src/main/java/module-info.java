@@ -3,6 +3,6 @@ module wla_server {
   requires java.xml;
   requires java.json;
   requires java.json.bind;
-  requires javacs;
+  requires dev.secondsun.lsp;
   requires wla_parser;
 }

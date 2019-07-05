@@ -1,5 +1,7 @@
 package net.saga.snes.dev.wlalanguageserver;
 
+import dev.secondsun.lsp.Position;
+import dev.secondsun.lsp.Range;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -9,8 +11,6 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.Node;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.NodeTypes;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.Token;
 import net.sagaoftherealms.tools.snes.assembler.pass.scan.token.TokenTypes;
-import org.javacs.lsp.Position;
-import org.javacs.lsp.Range;
 
 public class Utils {
 

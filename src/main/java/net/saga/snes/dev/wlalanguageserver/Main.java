@@ -1,7 +1,7 @@
 package net.saga.snes.dev.wlalanguageserver;
 
+import dev.secondsun.lsp.LSP;
 import java.util.logging.Logger;
-import org.javacs.lsp.LSP;
 
 public class Main {
 

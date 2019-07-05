@@ -3,6 +3,9 @@ package net.saga.snes.dev.wlalanguageserver.features;
 import static net.saga.snes.dev.wlalanguageserver.Utils.getNodeStream;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
+import dev.secondsun.lsp.DocumentSymbolParams;
+import dev.secondsun.lsp.Location;
+import dev.secondsun.lsp.SymbolInformation;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,9 +20,6 @@ import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.definition.
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.macro.MacroNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.directive.section.SectionNode;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
-import org.javacs.lsp.DocumentSymbolParams;
-import org.javacs.lsp.Location;
-import org.javacs.lsp.SymbolInformation;
 
 public class DocumentSymbolFeature
     implements Feature<DocumentSymbolParams, List<SymbolInformation>> {
