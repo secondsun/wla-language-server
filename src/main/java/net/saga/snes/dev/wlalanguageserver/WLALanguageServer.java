@@ -3,11 +3,18 @@ package net.saga.snes.dev.wlalanguageserver;
 import static net.saga.snes.dev.wlalanguageserver.Utils.toRange;
 
 import dev.secondsun.lsp.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.json.Json;
 import net.saga.snes.dev.wlalanguageserver.features.*;
@@ -27,6 +34,8 @@ public class WLALanguageServer extends LanguageServer {
   private GotoDefinitionFeature gotoDefinitionFeature = new GotoDefinitionFeature();
   private DocumentSymbolFeature documentSymbolFeature = new DocumentSymbolFeature();
   private FindReferenceFeature findReferenceFeature = new FindReferenceFeature();
+  private RetroJsonCompletionFeature retroCompletionFeature = new RetroJsonCompletionFeature();
+  private Map<Integer, Function<Object, Void>> requests = new HashMap<>();
 
   public WLALanguageServer(LanguageClient client) {
 
@@ -55,13 +64,25 @@ public class WLALanguageServer extends LanguageServer {
         this.documentLinkFeature,
         this.gotoDefinitionFeature,
         this.documentSymbolFeature,
+        this.retroCompletionFeature,
         this.findReferenceFeature);
   }
 
   @Override
-  public void initialized() {
+  public Optional<CompletionList> completion(TextDocumentPositionParams params) {
+    if (params.textDocument.uri.toString().endsWith("retro.json")) {
+      return this.retroCompletionFeature.handle(project, params);
+    }
+    return Optional.empty();
+  }
 
-    this.project = initializeProject.getProject();
+  @Override
+  public void initialized() {
+    if (!new File(this.workspaceRoot.toString() + File.separator + "retro.json").exists()) {
+      requestCreateRetroJson();
+    } else {
+      this.project = initializeProject.getProject();
+    }
 
     LOG.info("initialized");
   }
@@ -95,6 +116,37 @@ public class WLALanguageServer extends LanguageServer {
   @Override
   public Optional<List<Location>> findReferences(ReferenceParams params) {
     return this.findReferenceFeature.handle(project, params);
+  }
+
+  private void requestCreateRetroJson() {
+    var params = new ShowMessageRequestParams();
+    params.message = "retro.json file is missing.  Please create it.";
+    params.actions.add(item("Create retro.json"));
+    requests.put(
+        (Integer) client.showMessageRequest(params),
+        (Object item) -> {
+          if (item != null && ((MessageActionItem) item).title.equals("Create retro.json")) {
+            var file = Paths.get(this.workspaceRoot).resolve("retro.json").toFile();
+            try {
+              file.createNewFile();
+            } catch (IOException e) {
+              LOG.log(Level.SEVERE, "Could not make retro.json", e);
+            }
+          }
+          return null;
+        });
+  }
+
+  private MessageActionItem item(String string) {
+    var item = new MessageActionItem();
+    item.title = string;
+    return item;
+  }
+
+  @Override
+  public void handleShowMessageRequestResponse(int id, MessageActionItem result) {
+    var request = requests.get(id);
+    request.apply(result);
   }
 
   @Override
