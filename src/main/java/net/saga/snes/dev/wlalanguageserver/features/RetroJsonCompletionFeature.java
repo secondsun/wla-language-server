@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
-import net.saga.snes.dev.wlalanguageserver.RetroCompletionCalculator;
+import net.saga.snes.dev.wlalanguageserver.completion.RetroCompletionCalculator;
 import net.sagaoftherealms.tools.snes.assembler.main.Project;
 import net.sagaoftherealms.tools.snes.assembler.pass.parse.visitor.Visitor;
 
