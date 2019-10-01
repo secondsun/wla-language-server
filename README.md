@@ -16,8 +16,6 @@ Clone and `mvn install` the following repos
  * https://github.com/secondsun/java-language-server
 
 Run `mvn install` in this directory root   
-Edit the patch_gson.sh file to run on your system  
-Run patch_gson.sh file  
 Edit the link file in the scripts directory that fits your OS  
 Run that link file  
 Move the dist dir into vscode  
