@@ -70,7 +70,7 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public Optional<CompletionList> completion(TextDocumentPositionParams params) {
-    if (params.textDocument.uri.toString().endsWith("retro.json")) {
+    if (isRetro(params.textDocument.uri)) {
       return this.retroCompletionFeature.handle(project, params);
     }
     return Optional.empty();
@@ -102,7 +102,11 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public List<DocumentLink> documentLink(DocumentLinkParams params) {
-    return this.documentLinkFeature.handle(project, params);
+    if (isRetro(params.textDocument.uri)) {
+      return new ArrayList<>();
+    } else {
+      return this.documentLinkFeature.handle(project, params);
+    }
   }
 
   @Override
@@ -115,6 +119,9 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public Optional<List<Location>> findReferences(ReferenceParams params) {
+    if (isRetro(params.textDocument.uri)) {
+      return Optional.empty();
+    }
     return this.findReferenceFeature.handle(project, params);
   }
 
@@ -194,7 +201,13 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public List<SymbolInformation> documentSymbol(DocumentSymbolParams params) {
-
+    if (isRetro(params.textDocument.uri)) {
+      return new ArrayList<>();
+    }
     return documentSymbolFeature.handle(project, params);
+  }
+
+  private boolean isRetro(URI location) {
+    return location.toString().endsWith("retro.json");
   }
 }

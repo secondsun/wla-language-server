@@ -56,9 +56,13 @@ public class RetroCompletionCalculator {
           var event = parser.next();
           var end = parser.getLocation();
           if (start.getLineNumber() <= normalizedPosition.line
-              && start.getColumnNumber() <= normalizedPosition.character
+              && (start.getLineNumber() < normalizedPosition.line
+                  || (start.getLineNumber() == normalizedPosition.line
+                      && start.getColumnNumber() <= normalizedPosition.character))
               && end.getLineNumber() >= normalizedPosition.line
-              && end.getColumnNumber() >= normalizedPosition.character) {
+              && (end.getLineNumber() > normalizedPosition.line
+                  || (end.getLineNumber() == normalizedPosition.line
+                      && end.getColumnNumber() >= normalizedPosition.character))) {
             switch (event) {
               case START_OBJECT:
               case END_OBJECT:

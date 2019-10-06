@@ -1,5 +1,9 @@
 package net.saga.dev.wlalanguageserver;
 
+import static net.saga.dev.wlalanguageserver.RetroJsonExamples.BLANK;
+import static net.saga.dev.wlalanguageserver.RetroJsonExamples.BLANK_MA;
+import static net.saga.dev.wlalanguageserver.RetroJsonExamples.EMPTY;
+import static net.saga.dev.wlalanguageserver.RetroJsonExamples.SUGGEST_ARCH_ROOT;
 import static org.junit.jupiter.api.Assertions.*;
 
 import dev.secondsun.lsp.CompletionItemKind;
@@ -13,11 +17,6 @@ import net.saga.snes.dev.wlalanguageserver.completion.RetroCompletionCalculator;
 import org.junit.jupiter.api.Test;
 
 public class TestRetroCompletion {
-
-  public static final String EMPTY = "";
-  public static final String BLANK = "{\n}";
-  public static final String BLANK_MAIN = "{\n" + "\"main\" :\"\"\n" + "}";
-  public static final String BLANK_MA = "{\n" + "\"ma\" :\"\"\n" + "}";
 
   @Test
   public void testEmptyFileCompletesWithBraces() {
@@ -104,6 +103,7 @@ public class TestRetroCompletion {
   @Test
   public void positionInsideInvalidKeyReturnsSomethingAppropriate() {
     var parser = Json.createParser(new StringReader(BLANK_MA));
+
     while (parser.hasNext()) {
       var location1 = parser.getLocation();
       var event = parser.next();
@@ -128,7 +128,40 @@ public class TestRetroCompletion {
     var mainItem = list.items.get(0);
     assertEquals("\"main\"", mainItem.textEdit.newText);
     assertEquals(1, mainItem.textEdit.range.start.line);
-    assertEquals(0, mainItem.textEdit.range.start.character);
-    assertEquals(4, mainItem.textEdit.range.end.character);
+    assertEquals(2, mainItem.textEdit.range.start.character);
+    assertEquals(6, mainItem.textEdit.range.end.character);
+  }
+
+  @Test
+  public void suggestMainArch() {
+    var parser = Json.createParser(new StringReader(SUGGEST_ARCH_ROOT));
+
+    while (parser.hasNext()) {
+      var location1 = parser.getLocation();
+      var event = parser.next();
+      var location2 = parser.getLocation();
+
+      System.out.println(
+          "Start : " + location1.getLineNumber() + " @ " + location1.getColumnNumber());
+      System.out.println("Event : " + event.name());
+      System.out.println(
+          "End : " + location2.getLineNumber() + " @ " + location2.getColumnNumber());
+    }
+
+    Position position = new Position(2, 2);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCH_ROOT, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(3, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(1);
+    assertEquals("\"main-arch\"", mainItem.textEdit.newText);
+    //        assertEquals(2, mainItem.textEdit.range.start.line);
+    //        assertEquals(2, mainItem.textEdit.range.start.character);
+    //        assertEquals(13, mainItem.textEdit.range.end.character);
+
   }
 }
