@@ -78,7 +78,8 @@ public class WLALanguageServer extends LanguageServer {
 
   @Override
   public void initialized() {
-    if (!new File(this.workspaceRoot.toString() + File.separator + "retro.json").exists()) {
+    if (!new File(this.workspaceRoot.resolve(this.workspaceRoot.getPath() + "/retro.json"))
+        .exists()) {
       requestCreateRetroJson();
     } else {
       this.project = initializeProject.getProject();

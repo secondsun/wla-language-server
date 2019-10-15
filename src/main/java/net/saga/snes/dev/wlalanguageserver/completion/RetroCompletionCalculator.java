@@ -64,15 +64,17 @@ public class RetroCompletionCalculator {
                   || (end.getLineNumber() == normalizedPosition.line
                       && end.getColumnNumber() >= normalizedPosition.character))) {
             switch (event) {
-              case START_OBJECT:
-              case END_OBJECT:
-                return completeKeys(retroFile, position);
+              
               case KEY_NAME:
                 return completeKey(
                     parser.getString(),
                     new Position(
                         (int) start.getLineNumber() - 1, (int) start.getColumnNumber() - 1),
                     new Position((int) end.getLineNumber() - 1, (int) end.getColumnNumber() - 1));
+              case START_OBJECT:
+              case END_OBJECT:
+              default:
+                return completeKeys(retroFile, position);
             }
           }
         }
