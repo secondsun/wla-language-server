@@ -183,8 +183,7 @@ public class WLALanguageServer extends LanguageServer {
     LOG.info(String.format("updateDiagnostics errorsFound %d", errors.size()));
     List<Diagnostic> diagnostics = new ArrayList<>();
 
-    errors
-        .stream()
+    errors.stream()
         .map(
             error -> {
               var d = new Diagnostic();

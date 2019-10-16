@@ -64,7 +64,6 @@ public class RetroCompletionCalculator {
                   || (end.getLineNumber() == normalizedPosition.line
                       && end.getColumnNumber() >= normalizedPosition.character))) {
             switch (event) {
-              
               case KEY_NAME:
                 return completeKey(
                     parser.getString(),

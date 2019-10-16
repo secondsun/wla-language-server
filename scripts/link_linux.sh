@@ -26,3 +26,6 @@ $JAVA_HOME/bin/jlink \
 #  --strip-debug \
 
 # strip -p --strip-unneeded dist/linux/lib/server/libjvm.so 
+
+sed -i 's/JLINK_VM_OPTIONS=.*/JLINK_VM_OPTIONS=--enable-preview/' dist/linux/bin/launcher
+
