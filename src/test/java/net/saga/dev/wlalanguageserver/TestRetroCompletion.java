@@ -1,9 +1,6 @@
 package net.saga.dev.wlalanguageserver;
 
-import static net.saga.dev.wlalanguageserver.RetroJsonExamples.BLANK;
-import static net.saga.dev.wlalanguageserver.RetroJsonExamples.BLANK_MA;
-import static net.saga.dev.wlalanguageserver.RetroJsonExamples.EMPTY;
-import static net.saga.dev.wlalanguageserver.RetroJsonExamples.SUGGEST_ARCH_ROOT;
+import static net.saga.dev.wlalanguageserver.RetroJsonExamples.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import dev.secondsun.lsp.CompletionItemKind;
@@ -61,7 +58,7 @@ public class TestRetroCompletion {
 
     TextEdit edit = archRoots.textEdit;
     assertNotNull(edit);
-    assertEquals("\"arch-roots\" : []", edit.newText);
+    assertEquals("\"arch-roots\"", edit.newText);
     assertEquals(1, edit.range.start.line);
     assertEquals(0, edit.range.start.character);
     assertEquals(1, edit.range.end.line);
@@ -79,7 +76,7 @@ public class TestRetroCompletion {
     assertEquals(true, mainArch.preselect);
     var edit = mainArch.textEdit;
     assertNotNull(edit);
-    assertEquals("\"main-arch\" : \"\"", edit.newText);
+    assertEquals("\"main-arch\"", edit.newText);
     assertEquals(line, edit.range.start.line);
     assertEquals(start, edit.range.start.character);
     assertEquals(line, edit.range.end.line);
@@ -93,7 +90,7 @@ public class TestRetroCompletion {
 
     var edit = main.textEdit;
     assertNotNull(edit);
-    assertEquals("\"main\" : \"\"", edit.newText);
+    assertEquals("\"main\"", edit.newText);
     assertEquals(line, edit.range.start.line);
     assertEquals(start, edit.range.start.character);
     assertEquals(line, edit.range.end.line);
@@ -101,54 +98,10 @@ public class TestRetroCompletion {
   }
 
   @Test
-  public void positionInsideInvalidKeyReturnsSomethingAppropriate() {
-    var parser = Json.createParser(new StringReader(BLANK_MA));
-
-    while (parser.hasNext()) {
-      var location1 = parser.getLocation();
-      var event = parser.next();
-      var location2 = parser.getLocation();
-
-      System.out.println(
-          "Start : " + location1.getLineNumber() + " @ " + location1.getColumnNumber());
-      System.out.println("Event : " + event.name());
-      System.out.println(
-          "End : " + location2.getLineNumber() + " @ " + location2.getColumnNumber());
-    }
-
-    Position position = new Position(1, 2);
-    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
-    var optionalList = calculator.calculate(BLANK_MA, position);
-    assertNotNull(optionalList);
-    assertNotNull(optionalList.get());
-    var list = optionalList.get();
-    assertNotNull(list);
-    assertEquals(2, list.items.size());
-
-    var mainItem = list.items.get(0);
-    assertEquals("\"main\"", mainItem.textEdit.newText);
-    assertEquals(1, mainItem.textEdit.range.start.line);
-    assertEquals(2, mainItem.textEdit.range.start.character);
-    assertEquals(6, mainItem.textEdit.range.end.character);
-  }
-
-  @Test
   public void suggestMainArch() {
     var parser = Json.createParser(new StringReader(SUGGEST_ARCH_ROOT));
 
-    while (parser.hasNext()) {
-      var location1 = parser.getLocation();
-      var event = parser.next();
-      var location2 = parser.getLocation();
-
-      System.out.println(
-          "Start : " + location1.getLineNumber() + " @ " + location1.getColumnNumber());
-      System.out.println("Event : " + event.name());
-      System.out.println(
-          "End : " + location2.getLineNumber() + " @ " + location2.getColumnNumber());
-    }
-
-    Position position = new Position(2, 2);
+    Position position = new Position(2, 1);
     RetroCompletionCalculator calculator = new RetroCompletionCalculator();
     var optionalList = calculator.calculate(SUGGEST_ARCH_ROOT, position);
     assertNotNull(optionalList);
@@ -159,9 +112,88 @@ public class TestRetroCompletion {
 
     var mainItem = list.items.get(1);
     assertEquals("\"main-arch\"", mainItem.textEdit.newText);
-    //        assertEquals(2, mainItem.textEdit.range.start.line);
-    //        assertEquals(2, mainItem.textEdit.range.start.character);
-    //        assertEquals(13, mainItem.textEdit.range.end.character);
+  }
 
+  @Test
+  public void suggestMainArchWhenDocumentIsWrong() {
+    var parser = Json.createParser(new StringReader(SUGGEST_ARCH_ROOT_WITH_INCOMPLETE));
+
+    Position position = new Position(2, 1);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCH_ROOT_WITH_INCOMPLETE, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(3, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(1);
+    assertEquals("\"main-arch\"", mainItem.textEdit.newText);
+  }
+
+  @Test
+  public void suggestArches() {
+
+    Position position = new Position(2, 13);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCHES, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(4, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(1);
+    assertEquals("\"spc700\"", mainItem.textEdit.newText);
+  }
+
+  @Test
+  public void suggestArchRootObjectKeys() {
+
+    Position position = new Position(3, 20);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCH_ROOT_OBJECT, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(2, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(0);
+    assertEquals("\"arch\"", mainItem.textEdit.newText);
+    mainItem = list.items.get(1);
+    assertEquals("\"path\"", mainItem.textEdit.newText);
+  }
+
+  @Test
+  public void suggestArchRootObject() {
+
+    Position position = new Position(3, 20);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCH_ROOTS, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(1, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(0);
+    assertEquals("{\n}", mainItem.textEdit.newText);
+  }
+
+  @Test
+  public void suggestArchRootObjectKeys2() {
+
+    Position position = new Position(4, 0);
+    RetroCompletionCalculator calculator = new RetroCompletionCalculator();
+    var optionalList = calculator.calculate(SUGGEST_ARCH_ROOT_OBJECT_KEYS, position);
+    assertNotNull(optionalList);
+    assertNotNull(optionalList.get());
+    var list = optionalList.get();
+    assertNotNull(list);
+    assertEquals(2, list.items.size()); // main-arch and arch-roots, and main.
+
+    var mainItem = list.items.get(0);
+    assertEquals("\"arch\"", mainItem.textEdit.newText);
   }
 }
