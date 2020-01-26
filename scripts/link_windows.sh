@@ -15,3 +15,6 @@ $JAVA_HOME/bin/jlink \
   --launcher launcher=wla_server/net.saga.snes.dev.wlalanguageserver.Main \
   --output dist/windows \
   --compress 2 
+sed -i 's/JLINK_VM_OPTIONS=.*/JLINK_VM_OPTIONS=--enable-preview/' dist/windows/bin/launcher
+sed -i 's/set JLINK_VM_OPTIONS=.*/set JLINK_VM_OPTIONS=--enable-preview/' dist/windows/bin/launcher.bat
+
